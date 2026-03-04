@@ -1,0 +1,11 @@
+[     650ms] ReferenceError: process is not defined
+    at <anonymous>:10:25
+    at m (https://www.elektrojob.ch/_next/static/chunks/84d57e14a9cbf564.js?dpl=dpl_8smUz3LSbRSx3pmnUHRPRcnkJYNX:1:5930)
+    at https://www.elektrojob.ch/_next/static/chunks/84d57e14a9cbf564.js?dpl=dpl_8smUz3LSbRSx3pmnUHRPRcnkJYNX:1:6744
+    at ih (https://www.elektrojob.ch/_next/static/chunks/4d4ee3ae4c2d55be.js?dpl=dpl_8smUz3LSbRSx3pmnUHRPRcnkJYNX:1:101231)
+    at uf (https://www.elektrojob.ch/_next/static/chunks/4d4ee3ae4c2d55be.js?dpl=dpl_8smUz3LSbRSx3pmnUHRPRcnkJYNX:1:125081)
+    at uc (https://www.elektrojob.ch/_next/static/chunks/4d4ee3ae4c2d55be.js?dpl=dpl_8smUz3LSbRSx3pmnUHRPRcnkJYNX:1:124743)
+    at uf (https://www.elektrojob.ch/_next/static/chunks/4d4ee3ae4c2d55be.js?dpl=dpl_8smUz3LSbRSx3pmnUHRPRcnkJYNX:1:125126)
+    at uc (https://www.elektrojob.ch/_next/static/chunks/4d4ee3ae4c2d55be.js?dpl=dpl_8smUz3LSbRSx3pmnUHRPRcnkJYNX:1:124743)
+    at uf (https://www.elektrojob.ch/_next/static/chunks/4d4ee3ae4c2d55be.js?dpl=dpl_8smUz3LSbRSx3pmnUHRPRcnkJYNX:1:125126)
+    at uc (https://www.elektrojob.ch/_next/static/chunks/4d4ee3ae4c2d55be.js?dpl=dpl_8smUz3LSbRSx3pmnUHRPRcnkJYNX:1:124743)

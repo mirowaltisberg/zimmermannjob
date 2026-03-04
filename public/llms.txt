@@ -1,0 +1,33 @@
+# zimmermannjob.ch
+
+> Die spezialisierte Jobbörse für Holzbau- und Zimmerei-Fachkräfte in der Schweiz.
+
+zimmermannjob.ch ist eine Nischen-Jobbörse für die Schweizer Holzbau- und Zimmereibranche. Die Plattform richtet sich an Zimmerleute, Holzbauer, Dachdecker, Holzbau-Poliere, Vorarbeiter, Projektleiter Holzbau, Holzbauplaner, Holzbauingenieure, Schreiner, Fassadenbauer, Treppenbauer, Elementbauer, Abbundspezialisten und Bauleiter Holzbau.
+
+## Wichtige Seiten
+
+- [Startseite](https://zimmermannjob.ch/): Jobsuche mit Filtern nach Beruf, Ort, Umkreis, Pensum
+- [Zimmermann EFZ Jobs Zürich](https://zimmermannjob.ch/zimmermannjobs/zimmermann-efz/zh): Beispiel-Landingpage
+- [Sitemap](https://zimmermannjob.ch/sitemap.xml): Alle verfügbaren Seiten
+
+## Kerninformationen
+
+- **Sprache**: Deutsch (Schweizer Markt)
+- **Regionen**: Alle Schweizer Kantone — Zürich, Bern, Basel, Aargau, St. Gallen, Luzern, Solothurn, Zug und weitere
+- **Berufe**: Zimmermann EFZ, Holzbauer EFZ, Dachdecker, Holzbau-Polier, Vorarbeiter Holzbau, Projektleiter Holzbau, Holzbauplaner, Holzbauingenieur, Schreiner, Fassadenbauer, Treppenbauer, Elementbauer, Abbundspezialist, Bauleiter Holzbau
+- **Lohndaten (Richtwerte, CHF/Jahr)**:
+  - Bauleiter Holzbau: 90'000 – 120'000
+  - Projektleiter Holzbau: 85'000 – 110'000
+  - Holzbauplaner / Holzbauingenieur: 80'000 – 105'000
+  - Holzbau-Polier / Vorarbeiter: 78'000 – 98'000
+  - Abbundspezialist: 68'000 – 85'000
+  - Zimmermann EFZ: 65'000 – 80'000
+  - Holzbauer EFZ: 65'000 – 80'000
+  - Fassadenbauer: 65'000 – 82'000
+  - Treppenbauer: 65'000 – 82'000
+  - Dachdecker: 62'000 – 78'000
+
+## Kontakt
+
+- **Website**: https://zimmermannjob.ch
+- **Branche**: Personalvermittlung / Jobbörse — Holzbau & Zimmerei Schweiz

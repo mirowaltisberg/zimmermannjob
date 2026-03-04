@@ -1,0 +1,3 @@
+# zimmermannjob.ch ads.txt
+# Placeholder for Authorized Digital Sellers
+# To be updated when/if advertising networks are integrated.

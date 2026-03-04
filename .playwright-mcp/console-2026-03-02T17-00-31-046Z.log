@@ -1,0 +1,64 @@
+[     536ms] ReferenceError: process is not defined
+    at <anonymous>:10:25
+    at loadScript (http://localhost:3111/_next/static/chunks/node_modules_76bb96c6._.js:463:19)
+    at http://localhost:3111/_next/static/chunks/node_modules_76bb96c6._.js:552:17
+    at Object.react_stack_bottom_frame (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:14876:22)
+    at runWithFiberInDEV (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:965:74)
+    at commitHookEffectListMount (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:7266:167)
+    at commitHookPassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:7301:60)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8696:33)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8757:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8757:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8757:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8695:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8695:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8700:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8695:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8700:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8695:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8695:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8700:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8695:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8757:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8757:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8757:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8757:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8757:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8757:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8757:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8695:17)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8683:316)
+    at commitPassiveMountOnFiber (http://localhost:3111/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:8700:17)
+[   42876ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed:  @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
+[   43882ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
+[   44884ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
+[   45887ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
+[   46891ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
+[   47895ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
+[   52900ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
+[   57908ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
+[   62932ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
+[   67956ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
+[   73017ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
+[   78138ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
+[   83250ms] [ERROR] WebSocket connection to 'ws://localhost:3111/_next/webpack-hmr?id=KqkHses1L5Hvxpqrnu9Nj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3111/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10911
