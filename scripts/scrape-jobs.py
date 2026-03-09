@@ -237,6 +237,7 @@ RELEVANT_TITLE_KEYWORDS = [
     "zimmerpolier",
     "bauleiter",
     "projektleiter",
+    "planer",
     "monteur",
     "montage",
     "techniker",
@@ -244,14 +245,24 @@ RELEVANT_TITLE_KEYWORDS = [
     "fachfrau",
     "fachperson",
     "werkstatt",
+    "produktion",
     "dachdecker",
     "dach",
     "treppe",
     "treppenbau",
     "handwerker",
     "schrein",
+    "tischler",
     "isolier",
     "dämm",
+    "cnc",
+    "maschinenführer",
+    "holzhaus",
+    "holztechni",
+    "gebäudehülle",
+    "sanierung",
+    "renovation",
+    "umbau",
 ]
 
 # Titles containing any of these are always rejected
@@ -427,6 +438,24 @@ DEFAULT_SEARCH_TERMS = [
     "Vorarbeiter Holzbau",
     "Holzbau Projektleiter",
     "Blockbau",
+    "Dachdecker",
+    "Schreiner",
+    "Holzbau Monteur",
+    "Elementbau Holz",
+    "Holzrahmenbau",
+    "Fachwerk",
+    "Treppenbauer",
+    "Holztechniker",
+    "Bauleiter Holzbau",
+    "CNC Holz",
+    "Maschinenführer Holz",
+    "Holzbearbeitung",
+    "Werkstatt Zimmerei",
+    "Holzbau Ingenieur",
+    "Carport Monteur",
+    "Pergola Bau",
+    "Holzhaus",
+    "Gebäudehülle Holz",
 ]
 
 DEFAULT_LOCATIONS = [
@@ -442,6 +471,14 @@ DEFAULT_LOCATIONS = [
     "Lugano, Schweiz",
     "Chur, Schweiz",
     "Sion, Schweiz",
+    "Olten, Schweiz",
+    "Thun, Schweiz",
+    "Frauenfeld, Schweiz",
+    "Zug, Schweiz",
+    "Schaffhausen, Schweiz",
+    "Solothurn, Schweiz",
+    "Rapperswil, Schweiz",
+    "Baden, Schweiz",
 ]
 
 
@@ -741,7 +778,7 @@ def main():
     parser = argparse.ArgumentParser(description="Scrape Swiss electrical jobs")
     parser.add_argument("--query", type=str, help="Single search query")
     parser.add_argument("--location", type=str, help="Single location")
-    parser.add_argument("--results", type=int, default=100, help="Results per query/location combo")
+    parser.add_argument("--results", type=int, default=50, help="Results per query/location combo")
     parser.add_argument("--quick", action="store_true", help="Quick mode: single query only")
     parser.add_argument("--chunk", type=int, default=0, help="Chunk index (0-based) for splitting search terms")
     parser.add_argument("--total-chunks", type=int, default=1, help="Total number of chunks to split search terms into")
