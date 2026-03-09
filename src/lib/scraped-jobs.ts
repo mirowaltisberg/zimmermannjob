@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import { supabase } from "@/lib/supabase";
 
+const TRADE = "zimmermann";
+
 export interface ScrapedJob {
   id: string;
   title: string;
@@ -103,6 +105,7 @@ export async function loadScrapedJobs(): Promise<ScrapedJob[]> {
     const { data, error } = await supabase
       .from("jobs")
       .select("*")
+      .eq("trade", TRADE)
       .order("date_posted", { ascending: false });
 
     if (!error && data && data.length > 0) {
@@ -135,6 +138,7 @@ export async function getScrapedJobById(id: string): Promise<ScrapedJob | null> 
       .from("jobs")
       .select("*")
       .eq("id", id)
+      .eq("trade", TRADE)
       .single();
 
     if (!error && data) {
