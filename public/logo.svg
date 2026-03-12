@@ -1,15 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 48" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 48" fill="none">
   <!-- Hammer mark -->
   <g transform="translate(4, 12.4) scale(0.7)">
-    <!-- Hammer head -->
     <rect x="8" y="2" width="22" height="10" rx="2" fill="#8B5E3C"/>
-    <!-- Claw -->
     <path d="M8 2 L4 -2 L6 -2 L10 2" fill="#8B5E3C"/>
-    <!-- Handle -->
     <rect x="17" y="12" width="4" height="26" rx="2" fill="#A0522D"/>
   </g>
-  <!-- Wordmark -->
-  <text x="44" y="35" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26">
-    <tspan fill="#1e293b">Zimmermann</tspan><tspan fill="#8B5E3C">job</tspan><tspan fill="#94a3b8" font-weight="400" font-size="20">.ch</tspan>
+
+  <text font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" x="36" y="36">
+    <tspan font-weight="900" fill="#1e293b">Zimmermann</tspan><tspan font-weight="900" fill="#8B5E3C">job</tspan><tspan font-weight="400" font-size="22" fill="#94a3b8">.ch</tspan>
   </text>
 </svg>
