@@ -49,7 +49,7 @@ export default function NotFound() {
             <h2 className="text-lg font-bold text-slate-900 mb-3">Beliebte Suchseiten</h2>
             <nav aria-label="Beliebte Stellenangebote">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {TOP_LANDING_PAGES.map((page) => (
+                {TOP_LANDING_PAGES.slice(0, 12).map((page) => (
                   <Link
                     key={`${page.role}-${page.canton}`}
                     href={getLandingPath(page)}

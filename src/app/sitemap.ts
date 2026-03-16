@@ -11,19 +11,30 @@ function toAbsolute(path: string): string {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const jobs = await getIndexableJobListings(400);
   const now = new Date();
-  const landingPageDate = new Date("2025-06-01");
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
-      url: toAbsolute("/"),
+      url: SITE_URL,
       lastModified: now,
-      changeFrequency: "hourly",
+      changeFrequency: "daily",
       priority: 1,
+    },
+    {
+      url: toAbsolute("/kontakt"),
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    },
+    {
+      url: toAbsolute("/arbeitgeber/preise"),
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.5,
     },
     ...TOP_LANDING_PAGES.map((page) => ({
       url: toAbsolute(getLandingPath(page)),
-      lastModified: landingPageDate,
-      changeFrequency: "weekly" as const,
+      lastModified: now,
+      changeFrequency: "daily" as const,
       priority: 0.8,
     })),
   ];

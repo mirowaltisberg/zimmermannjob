@@ -7,18 +7,11 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/jobs/", "/zimmermannjobs/"],
+        allow: ["/"],
         disallow: [
-          "/api/",           // API routes — not for indexing
-          "/*?*sort=",       // Filter/sort parameter URLs — duplicate content
-          "/*?*type=",
-          "/*?*workload=",
-          "/*?*remote=",
-          "/*?*postedWithinDays=",
-          "/*?*offset=",     // Pagination parameter URLs
-          "/*?*q=",          // Search query parameter URLs — duplicate content
-          "/*?*loc=",
-          "/*?*radiusKm=",
+          "/api/",
+          "/arbeitgeber/login",
+          "/arbeitgeber/kandidaten",
         ],
       },
     ],

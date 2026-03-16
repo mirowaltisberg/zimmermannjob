@@ -3,6 +3,7 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
+  trailingSlash: false,
 
   experimental: {
     // Tree-shake icon/analytics packages — eliminates unused JS (24 KiB savings)
@@ -21,6 +22,21 @@ const nextConfig: NextConfig = {
       { key: "X-Frame-Options", value: "SAMEORIGIN" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+      { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+      {
+        key: "Content-Security-Policy",
+        value: [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://va.vercel-scripts.com",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' data: https: blob:",
+          "font-src 'self' https://fonts.gstatic.com",
+          "connect-src 'self' https://www.google-analytics.com https://www.facebook.com https://vitals.vercel-insights.com https://va.vercel-scripts.com https://*.supabase.co",
+          "frame-src 'none'",
+          "object-src 'none'",
+          "base-uri 'self'",
+        ].join("; "),
+      },
     ];
 
     return [

@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: "Kontakt & Support",
   description:
     "Kontaktieren Sie das Team von zimmermannjob.ch — wir helfen Ihnen bei Fragen rund um Stelleninserate und Bewerbungen.",
+  alternates: {
+    canonical: "/kontakt",
+  },
 };
 
 export default function KontaktPage() {

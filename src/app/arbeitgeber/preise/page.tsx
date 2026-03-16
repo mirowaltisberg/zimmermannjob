@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   title: "Preise & Pakete",
   description:
     "Erfahren Sie mehr über die Inseratepreise und Pakete auf zimmermannjob.ch — der spezialisierten Jobbörse für Holzbau-Fachkräfte.",
+  alternates: {
+    canonical: "/arbeitgeber/preise",
+  },
 };
 
 export default function PreisePage() {

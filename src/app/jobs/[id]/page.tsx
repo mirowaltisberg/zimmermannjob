@@ -260,10 +260,10 @@ export async function generateMetadata(props: JobDetailsPageProps): Promise<Meta
     };
   }
 
-  const description = job.description.slice(0, 160);
+  const description = job.description.slice(0, 155);
 
   return {
-    title: `${job.title} | zimmermannjob.ch`,
+    title: `${job.title} — ${job.company}`,
     description,
     alternates: {
       canonical: `/jobs/${job.id}`,

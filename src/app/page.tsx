@@ -13,6 +13,21 @@ import { buildJobPostingSchema } from "@/lib/job-schema";
 
 export const revalidate = 3600;
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://zimmermannjob.ch";
+
+const homepageBreadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Startseite",
+      item: SITE_URL,
+    },
+  ],
+};
+
 export default async function HomePage() {
   const initialData = await searchJobListings({
     q: "",
@@ -22,12 +37,24 @@ export default async function HomePage() {
     sort: "newest",
   });
 
+  // Strip heavy arrays not needed by the client-side search component
+  const liteData = {
+    ...initialData,
+    jobs: initialData.jobs.map(({ responsibilities, requirements, benefits, fullDescription, ...rest }) => ({
+      ...rest,
+      responsibilities: [] as string[],
+      requirements: [] as string[],
+      benefits: [] as string[],
+    })),
+  };
+
   return (
     <>
+      <JsonLd data={homepageBreadcrumbSchema} />
       {initialData.jobs.map((job) => (
         <JsonLd key={`schema-${job.source}-${job.id}`} data={buildJobPostingSchema(job)} />
       ))}
-      <HomepageSearch initialData={initialData} />
+      <HomepageSearch initialData={liteData} />
       <HomepageSeoContent />
       <SiteFooter />
     </>
