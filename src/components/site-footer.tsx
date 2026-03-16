@@ -132,6 +132,23 @@ export function SiteFooter() {
           </div>
         </div>
 
+        {/* Sister job boards — cross-linking network */}
+        <div className="border-t border-slate-800 pt-6 mt-6">
+          <h3 className="text-white font-semibold text-sm uppercase tracking-wider mb-3">
+            Weitere Jobbörsen
+          </h3>
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            <a href="https://www.elektrojob.ch" target="_blank" rel="noopener" className="text-sm hover:text-white transition-colors">Elektrojobs</a>
+            <a href="https://sanitaerjob.ch" target="_blank" rel="noopener" className="text-sm hover:text-white transition-colors">Sanitärjobs</a>
+            <a href="https://heizungjob.ch" target="_blank" rel="noopener" className="text-sm hover:text-white transition-colors">Heizungsjobs</a>
+            <a href="https://spenglerjob.ch" target="_blank" rel="noopener" className="text-sm hover:text-white transition-colors">Spenglerjobs</a>
+            <a href="https://dachdeckerjob.ch" target="_blank" rel="noopener" className="text-sm hover:text-white transition-colors">Dachdeckerjobs</a>
+            <a href="https://schreinerjob.ch" target="_blank" rel="noopener" className="text-sm hover:text-white transition-colors">Schreinerjobs</a>
+            <a href="https://bodenlegerjob.ch" target="_blank" rel="noopener" className="text-sm hover:text-white transition-colors">Bodenlegerjobs</a>
+            <a href="https://xn--grtnerjob-n2a.ch" target="_blank" rel="noopener" className="text-sm hover:text-white transition-colors">Gärtnerjobs</a>
+          </div>
+        </div>
+
         {/* Bottom bar */}
         <div className="border-t border-slate-800 pt-6 mt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
           <div className="flex flex-col sm:flex-row items-center gap-3">
