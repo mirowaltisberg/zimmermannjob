@@ -282,6 +282,40 @@ export default async function LandingRolePage({ params }: LandingPageProps) {
           ))}
         </section>
 
+        {/* Role & canton detail — unique content per page to reduce duplicate ratio */}
+        <section className="mt-12 space-y-6">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">
+              Was macht ein {config.role}?
+            </h2>
+            <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+              {config.roleDescription}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-lg border border-slate-200 bg-white p-4">
+              <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Jahreslohn</p>
+              <p className="text-sm font-semibold text-slate-900">{config.salaryRange}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-white p-4">
+              <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Voraussetzungen</p>
+              <p className="text-sm text-slate-700">{config.requirements.split(",")[0]}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-white p-4">
+              <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Karriere</p>
+              <p className="text-sm text-slate-700">{config.career.split(".")[0]}.</p>
+            </div>
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">
+              Arbeitsmarkt in {config.canton}
+            </h2>
+            <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+              {config.cantonContext} Das durchschnittliche Jahresgehalt für {config.role} in der Schweiz liegt bei {config.salaryRange}. {config.career}
+            </p>
+          </div>
+        </section>
+
         {/* FAQ section */}
         {config.faqs && config.faqs.length > 0 && (
           <section className="mt-12" aria-label="Häufig gestellte Fragen">

@@ -13,6 +13,11 @@ export interface LandingPageConfig {
   title: string;
   description: string;
   intro: string;
+  roleDescription: string;
+  salaryRange: string;
+  requirements: string;
+  career: string;
+  cantonContext: string;
   faqs: LandingFaq[];
 }
 
@@ -277,6 +282,11 @@ function buildLandingConfig(roleKey: string, cantonKey: string): LandingPageConf
     title: `${role.label} Jobs in ${canton.name}`,
     description: `Aktuelle ${role.label} Stellen im Kanton ${canton.name}. ${role.roleDescription.split(".")[0]}. Jetzt bewerben auf zimmermannjob.ch.`,
     intro: `Als ${role.label} in ${canton.name} findest du auf zimmermannjob.ch alle aktuellen Stellenangebote in deiner Region. ${role.roleDescription} ${canton.context} Die Nachfrage nach qualifizierten ${role.label}-Fachkräften im Kanton ${canton.name} ist hoch — Arbeitgeber suchen gezielt nach Kandidaten mit ${role.requirements.split(",")[0].toLowerCase()}. Das durchschnittliche Jahresgehalt für ${role.label} in der Schweiz liegt bei ${role.salaryRange}. Verwandte Berufe wie ${relatedRolesList} bieten zusätzliche Karrieremöglichkeiten in der Holzbaubranche. ${role.career} Nutze unsere smarte Filterung nach Pensum, Umkreis und Anstellungsart, um die passende Stelle zu finden. Bewirb dich direkt online und lade deinen Lebenslauf hoch.`,
+    roleDescription: role.roleDescription,
+    salaryRange: role.salaryRange,
+    requirements: role.requirements,
+    career: role.career,
+    cantonContext: canton.context,
     faqs: [
       {
         question: `Was verdient ein ${role.label} im Kanton ${canton.name}?`,
@@ -293,6 +303,10 @@ function buildLandingConfig(roleKey: string, cantonKey: string): LandingPageConf
       {
         question: `Wie viele ${role.label} Jobs gibt es in ${canton.name}?`,
         answer: `Auf zimmermannjob.ch findest du aktuelle ${role.label} Stellen im Kanton ${canton.name}. Die Anzahl verfügbarer Jobs variiert — nutze unsere Suche für die aktuellsten Ergebnisse.`,
+      },
+      {
+        question: `Wie ist der Arbeitsmarkt für ${role.label} in ${canton.name}?`,
+        answer: `${canton.context} Die Nachfrage nach qualifizierten ${role.label}-Fachkräften im Kanton ${canton.name} ist hoch. Das Durchschnittsgehalt liegt bei ${role.salaryRange} pro Jahr. Arbeitgeber suchen gezielt nach Kandidaten mit ${role.requirements.split(",")[0].toLowerCase()}.`,
       },
     ],
   };
