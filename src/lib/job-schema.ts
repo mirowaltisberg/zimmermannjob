@@ -42,7 +42,7 @@ export function buildJobPostingSchema(job: JobListing) {
     industry: "Holzbau & Zimmerei",
     hiringOrganization: {
       "@type": "Organization",
-      name: job.company,
+      name: job.company?.trim() || "Arbeitgeber auf zimmermannjob.ch",
       ...(job.companyUrl ? { sameAs: job.companyUrl } : {}),
     },
     jobLocation: {

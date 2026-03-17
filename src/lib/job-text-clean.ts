@@ -61,6 +61,14 @@ function isNoiseLine(line: string): boolean {
   return false;
 }
 
+function fixEncodedUmlauts(text: string): string {
+  return text
+    .replace(/\bfuer\b/gi, (m) => m[0] === "F" ? "Für" : "für")
+    .replace(/\bueber\b/gi, (m) => m[0] === "U" ? "Über" : "über")
+    .replace(/\bLoes/g, "Lös")
+    .replace(/\bloes/g, "lös");
+}
+
 export function cleanJobText(input: string): string {
   if (!input) {
     return "";
@@ -81,7 +89,8 @@ export function cleanJobText(input: string): string {
     cleanedLines.push(line);
   }
 
-  return cleanedLines.join(" ").replace(/\s+/g, " ").trim();
+  const joined = cleanedLines.join(" ").replace(/\s+/g, " ").trim();
+  return fixEncodedUmlauts(joined);
 }
 
 function truncateAtWord(input: string, maxLength: number): string {

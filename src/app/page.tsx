@@ -1,9 +1,17 @@
+import type { Metadata } from "next";
 import { HomepageSearch } from "@/app/_components/homepage-search";
 import { HomepageSeoContent } from "@/app/_components/homepage-seo-content";
 import { SiteFooter } from "@/components/site-footer";
 import { searchJobListings } from "@/lib/job-catalog";
 import { JsonLd } from "@/components/json-ld";
 import { buildJobPostingSchema } from "@/lib/job-schema";
+
+export const metadata: Metadata = {
+  title: "Zimmermann Jobs Schweiz 2026 | Offene Stellen finden",
+  description:
+    "Finde aktuelle Zimmermann Jobs in der Schweiz. Stellen für Zimmermann EFZ, Holzbau-Vorarbeiter, Holzbau-Polier, Holzbautechniker & mehr. Jetzt Lebenslauf einreichen.",
+  alternates: { canonical: "/" },
+};
 
 // SEO-DECISION: This page is a server component that:
 // 1. Fetches initial jobs server-side so Google crawler sees real job titles in HTML
