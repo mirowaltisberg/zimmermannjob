@@ -42,7 +42,7 @@ export default async function HomePage() {
     loc: "",
     limit: 12,
     offset: 0,
-    sort: "newest",
+    sort: "relevance",
   });
 
   // Strip heavy arrays not needed by the client-side search component
