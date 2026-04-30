@@ -241,6 +241,11 @@ export async function generateMetadata(props: JobDetailsPageProps): Promise<Meta
       type: "article",
       url: `/jobs/${job.id}`,
     },
+    twitter: {
+      card: "summary_large_image",
+      title: `${job.title}`,
+      description,
+    },
   };
 }
 

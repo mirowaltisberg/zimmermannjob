@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { getIndexableJobListings } from "@/lib/job-catalog";
 import { getLandingPath, TOP_LANDING_PAGES } from "@/lib/landing-pages";
 
+export const revalidate = 3600;
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.zimmermannjob.ch";
 
 function toAbsolute(path: string): string {
