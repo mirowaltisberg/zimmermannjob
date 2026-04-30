@@ -92,8 +92,11 @@ function loadFromJson(): ScrapedJob[] {
   }
 }
 
+const SUPABASE_PAGE_SIZE = 1000;
+
 /**
  * Load all scraped jobs from Supabase (with TTL cache).
+ * Paginates through all results since Supabase limits to 1000 rows per request.
  * Falls back to local JSON if Supabase is unreachable.
  */
 export async function loadScrapedJobs(): Promise<ScrapedJob[]> {
@@ -102,14 +105,32 @@ export async function loadScrapedJobs(): Promise<ScrapedJob[]> {
   }
 
   try {
-    const { data, error } = await supabase
-      .from("jobs")
-      .select("*")
-      .eq("trade", TRADE)
-      .order("date_posted", { ascending: false });
+    const allRows: DbRow[] = [];
+    let from = 0;
 
-    if (!error && data && data.length > 0) {
-      cachedJobs = (data as DbRow[]).map(mapRowToScrapedJob);
+    while (true) {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("*")
+        .eq("trade", TRADE)
+        .order("date_posted", { ascending: false })
+        .range(from, from + SUPABASE_PAGE_SIZE - 1);
+
+      if (error || !data || data.length === 0) {
+        break;
+      }
+
+      allRows.push(...(data as DbRow[]));
+
+      if (data.length < SUPABASE_PAGE_SIZE) {
+        break;
+      }
+
+      from += SUPABASE_PAGE_SIZE;
+    }
+
+    if (allRows.length > 0) {
+      cachedJobs = allRows.map(mapRowToScrapedJob);
       cachedAt = Date.now();
       return cachedJobs;
     }

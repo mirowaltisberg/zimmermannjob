@@ -666,37 +666,70 @@ function withoutLongDescription(job: JobListing): JobListing {
   return clone;
 }
 
+const MIN_RESULTS_BEFORE_FALLBACK = 3;
+
+function applySecondaryFilters(
+  jobs: JobListing[],
+  normalized: NormalizedParams
+): JobListing[] {
+  return jobs.filter(
+    (job) =>
+      isValueInFilter(job.type, normalized.type) &&
+      isValueInFilter(normalizeWorkload(job.workload), normalizeWorkload(normalized.workload)) &&
+      matchesRemote(job, normalized.remote) &&
+      matchesPostedWithinDays(job, normalized.postedWithinDays)
+  );
+}
+
 export async function searchJobListings(params: JobSearchParams): Promise<JobSearchResult> {
   const normalized = normalizeSearchParams(params);
   const sourceBundle = await getSourceJobs(normalized.q, normalized.loc);
   const originCoordinate =
     normalized.loc && normalized.radiusKm ? getCachedCoordinate(normalized.loc) : null;
 
-  const baseScopedScraped = sourceBundle.scrapedJobs.filter(
+  // --- Phase 1: exact query + location ---
+  let baseScopedScraped = sourceBundle.scrapedJobs.filter(
     (job) =>
       matchesQuery(job, normalized.q) &&
       matchesLocationWithRadius(job, normalized.loc, normalized.radiusKm, originCoordinate)
   );
-  const baseScopedGenerated = sourceBundle.generatedJobs.filter(
+  let baseScopedGenerated = sourceBundle.generatedJobs.filter(
     (job) =>
       matchesQuery(job, normalized.q) &&
       matchesLocationWithRadius(job, normalized.loc, normalized.radiusKm, originCoordinate)
   );
 
-  const filteredScraped = baseScopedScraped.filter(
-    (job) =>
-      isValueInFilter(job.type, normalized.type) &&
-      isValueInFilter(normalizeWorkload(job.workload), normalizeWorkload(normalized.workload)) &&
-      matchesRemote(job, normalized.remote) &&
-      matchesPostedWithinDays(job, normalized.postedWithinDays)
-  );
-  const filteredGenerated = baseScopedGenerated.filter(
-    (job) =>
-      isValueInFilter(job.type, normalized.type) &&
-      isValueInFilter(normalizeWorkload(job.workload), normalizeWorkload(normalized.workload)) &&
-      matchesRemote(job, normalized.remote) &&
-      matchesPostedWithinDays(job, normalized.postedWithinDays)
-  );
+  let filteredScraped = applySecondaryFilters(baseScopedScraped, normalized);
+  let filteredGenerated = applySecondaryFilters(baseScopedGenerated, normalized);
+  let fallbackUsed = sourceBundle.fallbackUsed;
+
+  // --- Phase 2: if too few results and location was set, drop location filter ---
+  if (
+    filteredScraped.length + filteredGenerated.length < MIN_RESULTS_BEFORE_FALLBACK &&
+    normalized.loc
+  ) {
+    baseScopedScraped = sourceBundle.scrapedJobs.filter((job) => matchesQuery(job, normalized.q));
+    baseScopedGenerated = sourceBundle.generatedJobs.filter((job) => matchesQuery(job, normalized.q));
+    filteredScraped = applySecondaryFilters(baseScopedScraped, normalized);
+    filteredGenerated = applySecondaryFilters(baseScopedGenerated, normalized);
+    fallbackUsed = true;
+  }
+
+  // --- Phase 3: if STILL too few (e.g. obscure query), drop query filter too ---
+  if (filteredScraped.length + filteredGenerated.length < MIN_RESULTS_BEFORE_FALLBACK) {
+    baseScopedScraped = sourceBundle.scrapedJobs;
+    baseScopedGenerated = sourceBundle.generatedJobs;
+    filteredScraped = applySecondaryFilters(baseScopedScraped, normalized);
+    filteredGenerated = applySecondaryFilters(baseScopedGenerated, normalized);
+    fallbackUsed = true;
+  }
+
+  // --- Phase 4: if secondary filters killed everything, drop them too ---
+  if (filteredScraped.length + filteredGenerated.length < MIN_RESULTS_BEFORE_FALLBACK) {
+    filteredScraped = baseScopedScraped;
+    filteredGenerated = baseScopedGenerated;
+    fallbackUsed = true;
+  }
 
   const includeGenerated = filteredScraped.length < MIN_REAL_RESULTS_FOR_SCRAPED_ONLY;
   const facets = buildFacets(
@@ -719,7 +752,7 @@ export async function searchJobListings(params: JobSearchParams): Promise<JobSea
     limit: normalized.limit,
     facets,
     scrapedAt: sourceBundle.scrapedAt,
-    fallbackUsed: sourceBundle.fallbackUsed,
+    fallbackUsed,
   };
 }
 

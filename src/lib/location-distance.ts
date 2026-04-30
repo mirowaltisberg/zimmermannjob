@@ -1,8 +1,11 @@
+import { SWISS_POSTAL_CODES } from "@/lib/swiss-postal-codes";
 
 export interface Coordinate {
   lat: number;
   lon: number;
 }
+
+const SWISS_PLZ_PATTERN = /\b(\d{4})\b/;
 
 const CITY_COORDINATES: Record<string, Coordinate> = {
   zurich: { lat: 47.3769, lon: 8.5417 },
@@ -198,6 +201,33 @@ export function getRegionRadius(location: string): number | null {
   return REGION_COORDINATES[normalized]?.defaultRadiusKm ?? null;
 }
 
+function resolveViaPostalCode(location: string): Coordinate | null {
+  const plzMatch = SWISS_PLZ_PATTERN.exec(location);
+  if (!plzMatch) {
+    return null;
+  }
+
+  const plz = plzMatch[1];
+  const entry = SWISS_POSTAL_CODES[plz];
+  if (!entry) {
+    return null;
+  }
+
+  // Try municipality name as a city
+  const municipalityCoordinate = resolveCityCoordinate(entry.municipality);
+  if (municipalityCoordinate) {
+    return municipalityCoordinate;
+  }
+
+  // Fall back to canton centroid
+  const cantonCoordinate = resolveCantonCoordinate(entry.canton);
+  if (cantonCoordinate) {
+    return cantonCoordinate;
+  }
+
+  return null;
+}
+
 export function resolveLocationCoordinate(location: string): Coordinate | null {
   if (!location.trim()) {
     return null;
@@ -214,6 +244,12 @@ export function resolveLocationCoordinate(location: string): Coordinate | null {
     return cityCoordinate;
   }
 
+  // Try resolving via Swiss postal code (PLZ → municipality → canton centroid)
+  const plzCoordinate = resolveViaPostalCode(location);
+  if (plzCoordinate) {
+    return plzCoordinate;
+  }
+
   const cantonCandidate = extractCantonCandidate(location);
   if (cantonCandidate) {
     const cantonCoordinate = resolveCantonCoordinate(cantonCandidate);
@@ -222,6 +258,18 @@ export function resolveLocationCoordinate(location: string): Coordinate | null {
     }
   }
 
+  return null;
+}
+
+/** Resolve a PLZ-based location to its canton abbreviation for text matching fallback */
+export function resolveLocationCanton(location: string): string | null {
+  const plzMatch = SWISS_PLZ_PATTERN.exec(location);
+  if (plzMatch) {
+    const entry = SWISS_POSTAL_CODES[plzMatch[1]];
+    if (entry) {
+      return entry.canton;
+    }
+  }
   return null;
 }
 
