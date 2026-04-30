@@ -151,8 +151,7 @@ function buildJobPostingSchema(job: JobListing): Record<string, any> {
     employmentType: mapEmploymentType(job.type),
     hiringOrganization: {
       "@type": "Organization",
-      name: job.company?.trim() || "Arbeitgeber auf zimmermannjob.ch",
-      ...(job.companyUrl ? { sameAs: job.companyUrl } : {}),
+      name: "Arbeitgeber via zimmermannjob.ch",
     },
     jobLocation: {
       "@type": "Place",
@@ -263,7 +262,7 @@ export async function generateMetadata(props: JobDetailsPageProps): Promise<Meta
   const description = job.description.slice(0, 155);
 
   return {
-    title: `${job.title} — ${job.company}`,
+    title: `${job.title} | zimmermannjob.ch`,
     description,
     alternates: {
       canonical: `/jobs/${job.id}`,

@@ -118,6 +118,7 @@ export function ApplyModal({ jobId, jobTitle, company, onOpen }: ApplyModalProps
     try {
       const formData = new FormData();
       formData.append("jobId", jobId);
+      formData.append("jobTitle", jobTitle);
       formData.append("name", name);
       formData.append("email", email);
       formData.append("phone", phone);
@@ -177,7 +178,7 @@ export function ApplyModal({ jobId, jobTitle, company, onOpen }: ApplyModalProps
                 Bewerben für {jobTitle}
               </DialogTitle>
               <DialogDescription className="text-slate-500">
-                bei {company}
+                Schnell und unkompliziert in unter 2 Minuten
               </DialogDescription>
             </DialogHeader>
 
@@ -311,7 +312,7 @@ export function ApplyModal({ jobId, jobTitle, company, onOpen }: ApplyModalProps
             </div>
             <h2 className="text-2xl font-bold text-slate-900">Bewerbung gesendet!</h2>
             <p className="text-slate-500">
-              Deine Bewerbung wurde erfolgreich an {company} übermittelt. Viel Erfolg!
+              Deine Bewerbung wurde erfolgreich übermittelt. Viel Erfolg!
             </p>
           </div>
         )}

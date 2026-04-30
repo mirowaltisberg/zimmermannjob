@@ -76,9 +76,9 @@ export function JobShareActions({ job }: JobShareActionsProps) {
       return "#";
     }
 
-    const text = `Interessanter Job: ${job.title} bei ${job.company} - ${pageUrl}`;
+    const text = `Interessanter Job: ${job.title} - ${pageUrl}`;
     return `https://wa.me/?text=${encodeURIComponent(text)}`;
-  }, [job.company, job.title, pageUrl]);
+  }, [job.title, pageUrl]);
 
   const handleCopy = async () => {
     if (!pageUrl) {
@@ -168,7 +168,7 @@ export function RecentlyViewedJobs({ currentJob, currentHref }: RecentlyViewedJo
               }
             >
               <p className="text-sm font-semibold text-slate-900 line-clamp-1">{entry.title}</p>
-              <p className="text-xs text-slate-500 line-clamp-1">{entry.company} · {entry.location}</p>
+              <p className="text-xs text-slate-500 line-clamp-1">{entry.location}</p>
             </Link>
           </li>
         ))}
