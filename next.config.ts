@@ -16,6 +16,30 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  async redirects() {
+    const cantonAliases: Array<[string, string]> = [
+      ["zug", "zg"],
+      ["luzern", "lu"],
+      ["schaffhausen", "sh"],
+      ["st-gallen", "sg"],
+      ["stgallen", "sg"],
+      ["zuerich", "zh"],
+      ["zurich", "zh"],
+      ["bern", "be"],
+      ["basel", "bs"],
+      ["aargau", "ag"],
+      ["solothurn", "so"],
+      ["fribourg", "fr"],
+      ["freiburg", "fr"],
+      ["graubuenden", "gr"],
+    ];
+    return cantonAliases.map(([from, to]) => ({
+      source: `/zimmermannjobs/:role/${from}`,
+      destination: `/zimmermannjobs/:role/${to}`,
+      permanent: true,
+    }));
+  },
+
   async headers() {
     const securityHeaders = [
       { key: "X-Content-Type-Options", value: "nosniff" },

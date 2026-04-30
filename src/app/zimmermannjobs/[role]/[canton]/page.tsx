@@ -223,9 +223,9 @@ export default async function LandingRolePage({ params }: LandingPageProps) {
                 <Card className="job-card hover:border-primary/50">
                   <CardContent className="p-4 sm:p-5">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <h2 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-primary line-clamp-1">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-primary line-clamp-1">
                         {job.title}
-                      </h2>
+                      </h3>
                       <Badge
                         variant="outline"
                         className={
