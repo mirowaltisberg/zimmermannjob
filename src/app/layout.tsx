@@ -113,7 +113,6 @@ const organizationSchema = {
   ],
 };
 
-// SEO-DECISION: WebSite schema with SearchAction enables the Google sitelinks search box
 const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
@@ -122,34 +121,6 @@ const websiteSchema = {
   description:
     "Die spezialisierte Jobbörse für Zimmermann und Holzbau-Fachkräfte in der Schweiz.",
   inLanguage: "de",
-  potentialAction: {
-    "@type": "SearchAction",
-    target: {
-      "@type": "EntryPoint",
-      urlTemplate: `${SITE_URL}/?q={search_term_string}`,
-    },
-    "query-input": "required name=search_term_string",
-  },
-};
-
-// SEO-DECISION: LocalBusiness schema to improve visibility for local search intent
-const localBusinessSchema = {
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  name: "zimmermannjob.ch",
-  image: `${SITE_URL}/logo.png`,
-  url: SITE_URL,
-  telephone: "",
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "Zürich",
-    addressCountry: "CH",
-  },
-  geo: {
-    "@type": "GeoCoordinates",
-    latitude: 47.3769,
-    longitude: 8.5417,
-  },
 };
 
 export default function RootLayout({
@@ -166,7 +137,6 @@ export default function RootLayout({
       <body lang="de" className={`${plusJakarta.variable} antialiased font-sans bg-slate-50`}>
         <JsonLd data={organizationSchema} />
         <JsonLd data={websiteSchema} />
-        <JsonLd data={localBusinessSchema} />
         <HapticProvider>{children}</HapticProvider>
         <Analytics />
         <SpeedInsights />

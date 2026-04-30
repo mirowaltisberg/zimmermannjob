@@ -34,15 +34,21 @@ export function buildJobPostingSchema(job: JobListing) {
     "@context": "https://schema.org/",
     "@type": "JobPosting",
     title: job.title,
-    description: job.description,
+    description: job.fullDescription || job.description,
+    identifier: {
+      "@type": "PropertyValue",
+      name: "zimmermannjob.ch",
+      value: job.id,
+    },
     datePosted,
     validThrough,
     employmentType: mapEmploymentType(job.type),
-    directApply: true,
+    directApply: false,
     industry: "Holzbau & Zimmerei",
     hiringOrganization: {
       "@type": "Organization",
       name: "Arbeitgeber via zimmermannjob.ch",
+      logo: `${SITE_URL}/logo.png`,
     },
     jobLocation: {
       "@type": "Place",
@@ -56,8 +62,6 @@ export function buildJobPostingSchema(job: JobListing) {
     url: `${SITE_URL}/jobs/${job.id}`,
   };
 
-  // Add salary if available
-  const salaryEstimate = estimateSalary(job.title);
   if (job.salary) {
     const numbers = job.salary.match(/[\d']+/g);
     if (numbers && numbers.length >= 2) {
@@ -71,12 +75,20 @@ export function buildJobPostingSchema(job: JobListing) {
         };
       }
     }
-  } else if (salaryEstimate) {
-    schema.baseSalary = {
-      "@type": "MonetaryAmount",
-      currency: "CHF",
-      value: { "@type": "QuantitativeValue", minValue: salaryEstimate.min, maxValue: salaryEstimate.max, unitText: "YEAR" },
-    };
+  } else {
+    const salaryEstimate = estimateSalary(job.title);
+    if (salaryEstimate) {
+      const median = Math.round((salaryEstimate.min + salaryEstimate.max) / 2);
+      schema.estimatedSalary = {
+        "@type": "MonetaryAmountDistribution",
+        name: "base",
+        currency: "CHF",
+        duration: "P1Y",
+        percentile10: salaryEstimate.min,
+        median,
+        percentile90: salaryEstimate.max,
+      };
+    }
   }
 
   if (job.isRemote === true) {

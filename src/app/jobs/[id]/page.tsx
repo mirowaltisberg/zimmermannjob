@@ -19,7 +19,7 @@ import { getJobListingById, getSimilarJobListings } from "@/lib/job-catalog";
 import type { JobListing } from "@/lib/job-types";
 import { JobPrimaryAction, JobShareActions, RecentlyViewedJobs } from "@/components/job-detail-client-tools";
 import { TOP_LANDING_PAGES, getLandingPath } from "@/lib/landing-pages";
-import { estimateSalary, formatSalaryRange, type SalaryRange } from "@/lib/salary-estimates";
+import { estimateSalary, formatSalaryRange } from "@/lib/salary-estimates";
 
 interface JobDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -70,88 +70,32 @@ function parseSwissLocation(location: string): { locality: string; region: strin
   };
 }
 
-// SEO-DECISION: Parse salary string or use estimated range for baseSalary schema
-function buildSalarySchema(
-  salaryStr: string | undefined,
-  estimatedRange: SalaryRange | null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Record<string, any> | undefined {
-  const range = estimatedRange;
-
-  // Try to extract numeric values from salary string
-  if (salaryStr) {
-    const numbers = salaryStr.match(/[\d']+/g);
-    if (numbers && numbers.length >= 2) {
-      const min = parseInt(numbers[0].replace(/'/g, ""), 10);
-      const max = parseInt(numbers[1].replace(/'/g, ""), 10);
-      if (min > 0 && max > 0) {
-        return {
-          "@type": "MonetaryAmount",
-          currency: "CHF",
-          value: {
-            "@type": "QuantitativeValue",
-            minValue: min,
-            maxValue: max,
-            unitText: "YEAR",
-          },
-        };
-      }
-    }
-  }
-
-  // Fall back to estimated salary range
-  if (range) {
-    return {
-      "@type": "MonetaryAmount",
-      currency: "CHF",
-      value: {
-        "@type": "QuantitativeValue",
-        minValue: range.min,
-        maxValue: range.max,
-        unitText: "YEAR",
-      },
-    };
-  }
-
-  return undefined;
-}
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildJobPostingSchema(job: JobListing): Record<string, any> {
   const { locality, region } = parseSwissLocation(job.location);
-  const salaryEstimate = estimateSalary(job.title);
-  const baseSalary = buildSalarySchema(job.salary, salaryEstimate);
 
-  // SEO-DECISION: validThrough defaults to datePosted + 60 days if not explicitly set
   const postedDate = new Date(job.datePosted);
   const validThrough = new Date(postedDate);
   validThrough.setDate(validThrough.getDate() + 60);
-
-  const fullDescription = job.fullDescription || job.description;
-  // Build a richer description from structured sections
-  const descriptionParts = [fullDescription];
-  if (job.responsibilities.length > 0) {
-    descriptionParts.push("\n\nAufgaben:\n" + job.responsibilities.map((r) => `- ${r}`).join("\n"));
-  }
-  if (job.requirements.length > 0) {
-    descriptionParts.push("\n\nAnforderungen:\n" + job.requirements.map((r) => `- ${r}`).join("\n"));
-  }
-  if (job.benefits.length > 0) {
-    descriptionParts.push("\n\nWir bieten:\n" + job.benefits.map((b) => `- ${b}`).join("\n"));
-  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const schema: Record<string, any> = {
     "@context": "https://schema.org",
     "@type": "JobPosting",
     title: job.title,
-    description: descriptionParts.join(""),
+    description: job.fullDescription || job.description,
+    identifier: {
+      "@type": "PropertyValue",
+      name: "zimmermannjob.ch",
+      value: job.id,
+    },
     datePosted: job.datePosted,
     validThrough: validThrough.toISOString().split("T")[0],
     employmentType: mapEmploymentType(job.type),
     hiringOrganization: {
       "@type": "Organization",
       name: "Arbeitgeber via zimmermannjob.ch",
+      logo: `${SITE_URL}/logo.png`,
     },
     jobLocation: {
       "@type": "Place",
@@ -162,13 +106,38 @@ function buildJobPostingSchema(job: JobListing): Record<string, any> {
         addressCountry: "CH",
       },
     },
-    directApply: true,
+    directApply: false,
     industry: "Holzbau & Zimmerei",
     url: `${SITE_URL}/jobs/${job.id}`,
   };
 
-  if (baseSalary) {
-    schema.baseSalary = baseSalary;
+  if (job.salary) {
+    const numbers = job.salary.match(/[\d']+/g);
+    if (numbers && numbers.length >= 2) {
+      const min = parseInt(numbers[0].replace(/'/g, ""), 10);
+      const max = parseInt(numbers[1].replace(/'/g, ""), 10);
+      if (min > 0 && max > 0) {
+        schema.baseSalary = {
+          "@type": "MonetaryAmount",
+          currency: "CHF",
+          value: { "@type": "QuantitativeValue", minValue: min, maxValue: max, unitText: "YEAR" },
+        };
+      }
+    }
+  } else {
+    const salaryEstimate = estimateSalary(job.title);
+    if (salaryEstimate) {
+      const median = Math.round((salaryEstimate.min + salaryEstimate.max) / 2);
+      schema.estimatedSalary = {
+        "@type": "MonetaryAmountDistribution",
+        name: "base",
+        currency: "CHF",
+        duration: "P1Y",
+        percentile10: salaryEstimate.min,
+        median,
+        percentile90: salaryEstimate.max,
+      };
+    }
   }
 
   if (job.isRemote === true) {
@@ -176,7 +145,6 @@ function buildJobPostingSchema(job: JobListing): Record<string, any> {
   }
 
   if (job.workload) {
-    // SEO-DECISION: Extract workload percentage as workHours annotation
     schema.workHours = job.workload;
   }
 
