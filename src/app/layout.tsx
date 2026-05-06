@@ -19,14 +19,14 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.zimmermannjob.
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Zimmermann Jobs Schweiz 2026 | Offene Stellen finden",
+    default: "463 Zimmermann Jobs Schweiz 2026 | Offene Stellen finden",
     template: "%s | zimmermannjob.ch",
   },
   description:
     "Finde aktuelle Zimmermann Jobs in der Schweiz. Stellen für Zimmermann EFZ, Holzbau-Vorarbeiter, Holzbau-Polier, Holzbautechniker & mehr. Jetzt Lebenslauf einreichen.",
   keywords: [
     "Zimmermannjobs",
-    "Zimmermann Jobs Schweiz",
+    "463 Zimmermann Jobs Schweiz",
     "Zimmermann EFZ Jobs",
     "Holzbau Jobs",
     "Holzbau-Vorarbeiter",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     "Stellen Holzbaubranche Schweiz",
   ],
   openGraph: {
-    title: "Zimmermann Jobs Schweiz 2026 | Offene Stellen finden",
+    title: "463 Zimmermann Jobs Schweiz 2026 | Offene Stellen finden",
     description:
       "Finde aktuelle Zimmermann Jobs in der Schweiz. Stellen für Zimmermann EFZ, Holzbau-Vorarbeiter, Holzbau-Polier, Holzbautechniker & mehr. Jetzt Lebenslauf einreichen.",
     type: "website",
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Zimmermann Jobs Schweiz 2026 | Offene Stellen finden",
+    title: "463 Zimmermann Jobs Schweiz 2026 | Offene Stellen finden",
     description:
       "Finde aktuelle Zimmermann Jobs in der Schweiz. Stellen für Zimmermann EFZ, Holzbau-Vorarbeiter, Holzbau-Polier, Holzbautechniker & mehr. Jetzt Lebenslauf einreichen.",
   },

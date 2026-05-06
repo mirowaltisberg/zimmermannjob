@@ -7,7 +7,7 @@ import { JsonLd } from "@/components/json-ld";
 import { buildJobPostingSchema } from "@/lib/job-schema";
 
 export const metadata: Metadata = {
-  title: "Zimmermann Jobs Schweiz 2026 | Offene Stellen finden",
+  title: "463 Zimmermann Jobs Schweiz 2026 | Offene Stellen finden",
   description:
     "Finde aktuelle Zimmermann Jobs in der Schweiz. Stellen für Zimmermann EFZ, Holzbau-Vorarbeiter, Holzbau-Polier, Holzbautechniker & mehr. Jetzt Lebenslauf einreichen.",
   alternates: { canonical: "/" },

@@ -712,7 +712,7 @@ export function HomepageSearch({ initialData }: HomepageSearchProps) {
           <div className="container mx-auto px-4 sm:px-6 text-center">
             <h1 className="animate-hero-title text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
               <span className="text-primary">Zimmermann Jobs</span> Schweiz
-              <span className="block text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-700 mt-2 sm:mt-4">Alle offenen Stellen</span>
+              <span className="block text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-700 mt-2 sm:mt-4">463 offene Stellen</span>
             </h1>
             <p className="animate-hero-subtitle text-base sm:text-lg text-slate-600 mb-8 sm:mb-10 max-w-2xl mx-auto px-1">
               Live-Stellen mit smarter Filterung für Zimmermann und Holzbau-Fachkräfte in der ganzen Schweiz. Finde den perfekten Job (Vollzeit / Teilzeit Pensum).
