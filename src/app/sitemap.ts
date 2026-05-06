@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getIndexableJobListings } from "@/lib/job-catalog";
 import { getLandingPath, TOP_LANDING_PAGES } from "@/lib/landing-pages";
+import { buildJobSlug } from "@/lib/job-slug";
 
 export const revalidate = 3600;
 
@@ -49,7 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const jobRoutes: MetadataRoute.Sitemap = validJobs.map((job) => ({
-    url: toAbsolute(`/jobs/${job.id}`),
+    url: toAbsolute(`/jobs/${buildJobSlug(job)}`),
     lastModified: job.datePosted ? new Date(job.datePosted) : now,
     changeFrequency: "daily",
     priority: 0.7,

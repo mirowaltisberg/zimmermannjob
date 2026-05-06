@@ -6,6 +6,7 @@ import {
   loadScrapedJobs,
   type ScrapedJob,
 } from "@/lib/scraped-jobs";
+import { reconstructScrapedIdFromSlug } from "@/lib/job-slug";
 import { cleanJobList, cleanJobSummary, cleanJobText } from "@/lib/job-text-clean";
 import { calculateDistanceKm, resolveLocationCoordinate, type Coordinate } from "@/lib/location-distance";
 import type {
@@ -804,7 +805,19 @@ export async function getJobListingById(input: {
     });
   }
 
-  return (await normalizeScrapedById(input.id)) ?? normalizeMockById(input.id);
+  // Direct lookup handles legacy `scraped-<trade>-<hex>` IDs and mock IDs.
+  const direct = (await normalizeScrapedById(input.id)) ?? normalizeMockById(input.id);
+  if (direct) {
+    return direct;
+  }
+
+  // New slug `<role>-<city>-<12hex>`: extract trailing hex, reconstruct legacy ID.
+  const reconstructedId = reconstructScrapedIdFromSlug(input.id);
+  if (reconstructedId && reconstructedId !== input.id) {
+    return await normalizeScrapedById(reconstructedId);
+  }
+
+  return null;
 }
 
 function overlapScore(a: string, b: string): number {

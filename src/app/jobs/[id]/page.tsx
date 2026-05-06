@@ -2,7 +2,7 @@ import { cache, Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import {
   Building2,
   CalendarDays,
@@ -20,6 +20,7 @@ import type { JobListing } from "@/lib/job-types";
 import { JobPrimaryAction, JobShareActions, RecentlyViewedJobs } from "@/components/job-detail-client-tools";
 import { TOP_LANDING_PAGES, getLandingPath } from "@/lib/landing-pages";
 import { estimateSalary, formatSalaryRange } from "@/lib/salary-estimates";
+import { buildJobSlug, isLegacyScrapedId } from "@/lib/job-slug";
 
 interface JobDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -108,7 +109,7 @@ function buildJobPostingSchema(job: JobListing): Record<string, any> {
     },
     directApply: false,
     industry: "Holzbau & Zimmerei",
-    url: `${SITE_URL}/jobs/${job.id}`,
+    url: `${SITE_URL}/jobs/${buildJobSlug(job)}`,
   };
 
   if (job.salary) {
@@ -172,7 +173,7 @@ function buildJobBreadcrumbSchema(job: JobListing) {
         "@type": "ListItem",
         position: 3,
         name: job.title,
-        item: `${SITE_URL}/jobs/${job.id}`,
+        item: `${SITE_URL}/jobs/${buildJobSlug(job)}`,
       },
     ],
   };
@@ -180,7 +181,7 @@ function buildJobBreadcrumbSchema(job: JobListing) {
 
 function buildJobHref(job: JobListing, fallbackQuery: string, fallbackLocation: string): string {
   if (job.source !== "generated") {
-    return `/jobs/${job.id}`;
+    return `/jobs/${buildJobSlug(job)}`;
   }
 
   const query = job.searchContext?.query ?? fallbackQuery;
@@ -202,6 +203,7 @@ const getJobPageData = cache(async ({ params, searchParams }: JobDetailsPageProp
   job: JobListing | null;
   query: string;
   location: string;
+  id: string;
 }> => {
   const { id } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : {};
@@ -214,7 +216,7 @@ const getJobPageData = cache(async ({ params, searchParams }: JobDetailsPageProp
     location,
   });
 
-  return { job, query, location };
+  return { job, query, location, id };
 });
 
 export async function generateMetadata(props: JobDetailsPageProps): Promise<Metadata> {
@@ -229,17 +231,19 @@ export async function generateMetadata(props: JobDetailsPageProps): Promise<Meta
 
   const description = job.description.slice(0, 155);
 
+  const slugPath = `/jobs/${buildJobSlug(job)}`;
+
   return {
     title: `${job.title} | zimmermannjob.ch`,
     description,
     alternates: {
-      canonical: `/jobs/${job.id}`,
+      canonical: slugPath,
     },
     openGraph: {
       title: `${job.title}`,
       description,
       type: "article",
-      url: `/jobs/${job.id}`,
+      url: slugPath,
     },
     twitter: {
       card: "summary_large_image",
@@ -301,10 +305,24 @@ function SimilarJobsSkeleton() {
 }
 
 export default async function JobDetailsPage(props: JobDetailsPageProps) {
-  const { job, query, location } = await getJobPageData(props);
+  const { job, query, location, id: incomingId } = await getJobPageData(props);
 
   if (!job) {
     notFound();
+  }
+
+  // Phase 2.4: 308 from legacy `scraped-<trade>-<hex>` IDs to new human-readable slug.
+  // Also covers the case where a stale slug (title/city changed) hits a still-valid hash.
+  if (job.source === "scraped") {
+    const canonicalSlug = buildJobSlug(job);
+    const isLegacy = isLegacyScrapedId(incomingId);
+    if (canonicalSlug !== incomingId && (isLegacy || canonicalSlug !== job.id)) {
+      const qs = new URLSearchParams();
+      if (query) qs.set("q", query);
+      if (location) qs.set("loc", location);
+      const queryString = qs.toString();
+      permanentRedirect(`/jobs/${canonicalSlug}${queryString ? `?${queryString}` : ""}`);
+    }
   }
 
   const currentHref = buildJobHref(job, query, location);

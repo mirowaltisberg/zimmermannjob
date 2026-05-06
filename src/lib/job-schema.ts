@@ -1,5 +1,6 @@
 import type { JobListing } from "@/lib/job-types";
 import { estimateSalary } from "@/lib/salary-estimates";
+import { buildJobSlug } from "@/lib/job-slug";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.zimmermannjob.ch";
 
@@ -59,7 +60,7 @@ export function buildJobPostingSchema(job: JobListing) {
         addressCountry: "CH",
       },
     },
-    url: `${SITE_URL}/jobs/${job.id}`,
+    url: `${SITE_URL}/jobs/${buildJobSlug(job)}`,
   };
 
   if (job.salary) {

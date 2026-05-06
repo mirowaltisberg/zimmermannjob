@@ -24,6 +24,7 @@ import { estimateSalary, formatSalaryRange } from "@/lib/salary-estimates";
 import { buildJobPostingSchema } from "@/lib/job-schema";
 import { getEditorialContent } from "@/data/editorial/zimmermannjob";
 import { EditorialIntro } from "@/app/_components/editorial-intro";
+import { buildJobSlug } from "@/lib/job-slug";
 
 export const revalidate = 3600;
 
@@ -35,7 +36,7 @@ interface LandingPageProps {
 
 function buildJobHref(job: JobListing, role: string, canton: string): string {
   if (job.source !== "generated") {
-    return `/jobs/${job.id}`;
+    return `/jobs/${buildJobSlug(job)}`;
   }
 
   const query = job.searchContext?.query ?? role;
@@ -75,7 +76,7 @@ function buildItemListSchema(jobs: JobListing[], config: LandingPageConfig) {
     itemListElement: jobs.slice(0, 20).map((job, index) => ({
       "@type": "ListItem",
       position: index + 1,
-      url: `${SITE_URL}/jobs/${job.id}`,
+      url: `${SITE_URL}/jobs/${buildJobSlug(job)}`,
       name: job.title,
     })),
   };
