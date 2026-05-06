@@ -143,12 +143,7 @@ export default function TeamPage() {
               Inserate werden auf zimmermannjob.ch grundsätzlich anonymisiert
               dargestellt — der konkrete Arbeitgeber wird im persönlichen
               Erstgespräch offengelegt. Diese Praxis schützt sowohl Bewerbende
-              als auch einstellende Betriebe vor unerwünschter Reichweite. Details
-              zum Umgang mit deinen Bewerbungsdaten findest du in der{" "}
-              <Link href="/datenschutz" className="underline hover:text-primary">
-                Datenschutzerklärung
-              </Link>
-              .
+              als auch einstellende Betriebe vor unerwünschter Reichweite.
             </p>
           </article>
         </section>

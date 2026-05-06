@@ -153,11 +153,6 @@ export function SiteFooter() {
         <div className="border-t border-slate-800 pt-6 mt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <p>© {new Date().getFullYear()} zimmermannjob.ch — Alle Rechte vorbehalten.</p>
-            <nav aria-label="Rechtliches" className="flex items-center gap-4">
-              <Link href="/impressum" className="hover:text-white transition-colors">Impressum</Link>
-              <Link href="/datenschutz" className="hover:text-white transition-colors">Datenschutz</Link>
-              <Link href="/agb" className="hover:text-white transition-colors">AGB</Link>
-            </nav>
             <nav aria-label="Branchenverbände" className="flex items-center gap-4">
               <a href="https://www.holzbau-schweiz.ch" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Holzbau Schweiz</a>
               <a href="https://www.lignum.ch" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Lignum</a>
