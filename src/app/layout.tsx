@@ -19,11 +19,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.zimmermannjob.
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "663 Zimmermann Jobs Schweiz 2026 | Offene Stellen finden",
+    default: "Zimmermann Jobs Schweiz 2026 | Stellen, Lohn & Ausbildung",
     template: "%s | zimmermannjob.ch",
   },
   description:
-    "Finde aktuelle Zimmermann Jobs in der Schweiz. Stellen für Zimmermann EFZ, Holzbau-Vorarbeiter, Holzbau-Polier, Holzbautechniker & mehr. Jetzt Lebenslauf einreichen.",
+    "Zimmermann Jobs Schweiz: Zimmermann EFZ, Holzbauer, Holzbau-Vorarbeiter, Polier, Projektleiter Holzbau. Lohn, Ausbildung, GAV — tägliche Updates.",
   keywords: [
     "Zimmermannjobs",
     "663 Zimmermann Jobs Schweiz",

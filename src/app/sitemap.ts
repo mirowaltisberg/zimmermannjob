@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { getIndexableJobListings } from "@/lib/job-catalog";
 import { getLandingPath, TOP_LANDING_PAGES } from "@/lib/landing-pages";
 import { buildJobSlug } from "@/lib/job-slug";
+import { ZIMMERMANN_CITIES } from "@/lib/zimmermann-cities";
 
 export const revalidate = 3600;
 
@@ -41,6 +42,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.5,
     },
+    {
+      url: toAbsolute("/lohn-zimmermann-schweiz"),
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    },
+    {
+      url: toAbsolute("/zimmermann-ausbildung"),
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.75,
+    },
+    {
+      url: toAbsolute("/zimmermann-in-der-naehe"),
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.75,
+    },
+    ...ZIMMERMANN_CITIES.map((c) => ({
+      url: toAbsolute(`/zimmermann-jobs/${c.slug}`),
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.85,
+    })),
     ...TOP_LANDING_PAGES.map((page) => ({
       url: toAbsolute(getLandingPath(page)),
       lastModified: now,
