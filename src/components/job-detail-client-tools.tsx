@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Copy, MessageCircle } from "lucide-react";
@@ -125,25 +125,17 @@ interface JobShareActionsProps {
 export function JobShareActions({ jobId, jobTitle }: JobShareActionsProps) {
   const { trigger } = useHaptic();
   const [isCopied, setIsCopied] = useState(false);
-  const [pageUrl, setPageUrl] = useState("");
 
-  useEffect(() => setPageUrl(window.location.href), []);
-
-  const whatsappHref = useMemo(() => {
-    if (!pageUrl) {
-      return "#";
-    }
-
+  const handleWhatsapp = () => {
+    const pageUrl = window.location.href;
     const text = `Interessanter Job: ${jobTitle} - ${pageUrl}`;
-    return `https://wa.me/?text=${encodeURIComponent(text)}`;
-  }, [jobTitle, pageUrl]);
+    const whatsappHref = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(whatsappHref, "_blank", "noopener,noreferrer");
+    trackEvent("share_whatsapp", { job_id: jobId });
+  };
 
   const handleCopy = async () => {
-    if (!pageUrl) {
-      return;
-    }
-
-    await navigator.clipboard.writeText(pageUrl);
+    await navigator.clipboard.writeText(window.location.href);
     trigger("success");
     setIsCopied(true);
     trackEvent("share_copy_link", { job_id: jobId });
@@ -152,17 +144,15 @@ export function JobShareActions({ jobId, jobTitle }: JobShareActionsProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button asChild variant="outline" size="sm" className="h-9 rounded-lg">
-        <a
-          href={whatsappHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-disabled={!pageUrl}
-          onClick={() => trackEvent("share_whatsapp", { job_id: jobId })}
-        >
-          <MessageCircle className="h-4 w-4 mr-1" />
-          WhatsApp
-        </a>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-9 rounded-lg"
+        onClick={handleWhatsapp}
+      >
+        <MessageCircle className="h-4 w-4 mr-1" />
+        WhatsApp
       </Button>
       <Button
         type="button"
@@ -170,7 +160,6 @@ export function JobShareActions({ jobId, jobTitle }: JobShareActionsProps) {
         size="sm"
         className="h-9 rounded-lg"
         onClick={handleCopy}
-        disabled={!pageUrl}
       >
         <Copy className="h-4 w-4 mr-1" />
         {isCopied ? "Kopiert" : "Link kopieren"}
@@ -198,7 +187,7 @@ export function RecentlyViewedJobs({
     SOURCE_BEARING_RECENT_KEYS.forEach((key) => window.localStorage.removeItem(key));
 
     const previousEntries = readRecentJobs().filter((entry) => entry.id !== jobId);
-    setRecentJobs(previousEntries.slice(0, 3));
+    const updateId = window.setTimeout(() => setRecentJobs(previousEntries.slice(0, 3)), 0);
 
     const currentEntry: RecentJobEntry = {
       id: jobId,
@@ -213,6 +202,7 @@ export function RecentlyViewedJobs({
       JSON.stringify([currentEntry, ...previousEntries].slice(0, 6))
     );
     trackEvent("job_view", { job_id: jobId });
+    return () => window.clearTimeout(updateId);
   }, [currentHref, jobId, jobTitle, location]);
 
   if (recentJobs.length === 0) {
