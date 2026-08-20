@@ -12,6 +12,7 @@ interface SearchDropdownProps {
   icon: React.ReactNode;
   maxLength?: number;
   className?: string;
+  label?: string;
 }
 
 export function SearchDropdown({
@@ -22,6 +23,7 @@ export function SearchDropdown({
   icon,
   maxLength = 80,
   className,
+  label,
 }: SearchDropdownProps) {
   const { trigger } = useHaptic();
   const [isOpen, setIsOpen] = useState(false);
@@ -30,6 +32,7 @@ export function SearchDropdown({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const listboxId = useId();
+  const inputId = useId();
 
   const filtered = value.trim()
     ? suggestions.filter((s) =>
@@ -121,18 +124,24 @@ export function SearchDropdown({
   };
 
   return (
-    <div ref={containerRef} className={cn("relative flex-1", className)}>
-      <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+    <div ref={containerRef} className={cn("search-field relative flex-1", className)}>
+      {label && (
+        <label htmlFor={inputId} className="search-field__label">
+          {label}
+        </label>
+      )}
+      <div className="search-field__icon absolute left-3 bottom-3.5 z-10 pointer-events-none">
         {icon}
       </div>
       <input
+        id={inputId}
         ref={inputRef}
         type="text"
         role="combobox"
         aria-expanded={showDropdown}
         aria-autocomplete="list"
         aria-haspopup="listbox"
-        aria-controls={listboxId}
+        aria-controls={showDropdown ? listboxId : undefined}
         aria-activedescendant={
           highlightedIndex >= 0
             ? `${listboxId}-suggestion-${highlightedIndex}`
@@ -141,7 +150,7 @@ export function SearchDropdown({
         value={value}
         maxLength={maxLength}
         placeholder={placeholder}
-        className="flex h-12 w-full rounded-md bg-transparent pl-10 pr-3 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none"
+        className="search-field__input flex h-12 w-full border-0 bg-transparent pl-10 pr-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
         onChange={(e) => {
           onChange(e.target.value);
           setIsOpen(true);
@@ -157,9 +166,11 @@ export function SearchDropdown({
         id={listboxId}
         ref={listRef}
         role="listbox"
+        aria-label={`${placeholder} – Vorschläge`}
+        hidden={!showDropdown}
         className={cn(
-          "search-dropdown absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-[min(55vh,16rem)] sm:max-h-56 overflow-y-auto overscroll-contain rounded-xl border bg-white shadow-lg",
-          showDropdown ? "search-dropdown-open" : "search-dropdown-closed pointer-events-none"
+          "search-dropdown absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-[min(55vh,16rem)] sm:max-h-56 overflow-y-auto overscroll-contain border bg-background shadow-lg",
+          "search-dropdown-open"
         )}
       >
         {filtered.map((item, i) => (
@@ -169,10 +180,8 @@ export function SearchDropdown({
             role="option"
             aria-selected={i === highlightedIndex}
             className={cn(
-              "search-dropdown-item cursor-pointer select-none px-4 py-3 sm:py-2.5 text-[15px] sm:text-sm leading-tight text-slate-600 transition-colors duration-100",
-              i === highlightedIndex && "bg-primary/8 text-slate-900",
-              i === 0 && "rounded-t-xl",
-              i === filtered.length - 1 && "rounded-b-xl"
+              "search-dropdown-item cursor-pointer select-none px-4 py-3 sm:py-2.5 text-[15px] sm:text-sm leading-tight text-muted-foreground transition-colors duration-100",
+              i === highlightedIndex && "bg-accent text-foreground"
             )}
             onMouseEnter={() => setHighlightedIndex(i)}
             onMouseDown={(e) => {

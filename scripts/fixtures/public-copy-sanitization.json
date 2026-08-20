@@ -1,0 +1,48 @@
+{
+  "cases": [
+    {
+      "company": "Müller & Söhne AG",
+      "location": "Müller & Söhne AG, Zürich",
+      "type": "Festanstellung",
+      "workload": "100%",
+      "expected": {
+        "location": "Schweiz",
+        "type": "Festanstellung",
+        "workload": "100%"
+      }
+    },
+    {
+      "company": "Zimmermann Partner GmbH",
+      "location": "Bern",
+      "type": "Temporär – Zimmermann Partner GmbH",
+      "workload": "80-100%",
+      "expected": {
+        "location": "Bern",
+        "type": "Nicht angegeben",
+        "workload": "80-100%"
+      }
+    },
+    {
+      "company": "Acme AG",
+      "location": "Basel",
+      "type": "Festanstellung",
+      "workload": "Acme AG / 60-80%",
+      "expected": {
+        "location": "Basel",
+        "type": "Festanstellung",
+        "workload": "Nicht angegeben"
+      }
+    },
+    {
+      "company": "Muster AG",
+      "location": "Muster AGentur Zürich",
+      "type": "Festanstellung",
+      "workload": "90%",
+      "expected": {
+        "location": "Muster AGentur Zürich",
+        "type": "Festanstellung",
+        "workload": "90%"
+      }
+    }
+  ]
+}

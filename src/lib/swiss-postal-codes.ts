@@ -62,7 +62,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1022": {
     "canton": "Waadt",
-    "municipality": "Chavannes-prčs-Renens"
+    "municipality": "Chavannes-près-Renens"
   },
   "1023": {
     "canton": "Waadt",
@@ -122,7 +122,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1037": {
     "canton": "Waadt",
-    "municipality": "Etagničres"
+    "municipality": "Etagnières"
   },
   "1038": {
     "canton": "Waadt",
@@ -222,7 +222,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1076": {
     "canton": "Waadt",
-    "municipality": "Jorat-Mézičres"
+    "municipality": "Jorat-Mézières"
   },
   "1077": {
     "canton": "Waadt",
@@ -246,11 +246,11 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1083": {
     "canton": "Waadt",
-    "municipality": "Jorat-Mézičres"
+    "municipality": "Jorat-Mézières"
   },
   "1084": {
     "canton": "Waadt",
-    "municipality": "Jorat-Mézičres"
+    "municipality": "Jorat-Mézières"
   },
   "1085": {
     "canton": "Waadt",
@@ -394,7 +394,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1145": {
     "canton": "Waadt",
-    "municipality": "Bičre"
+    "municipality": "Bière"
   },
   "1146": {
     "canton": "Waadt",
@@ -518,39 +518,39 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1201": {
     "canton": "Genf",
-    "municipality": "Genčve"
+    "municipality": "Genève"
   },
   "1202": {
     "canton": "Genf",
-    "municipality": "Genčve"
+    "municipality": "Genève"
   },
   "1203": {
     "canton": "Genf",
-    "municipality": "Genčve"
+    "municipality": "Genève"
   },
   "1204": {
     "canton": "Genf",
-    "municipality": "Genčve"
+    "municipality": "Genève"
   },
   "1205": {
     "canton": "Genf",
-    "municipality": "Genčve"
+    "municipality": "Genève"
   },
   "1206": {
     "canton": "Genf",
-    "municipality": "Genčve"
+    "municipality": "Genève"
   },
   "1207": {
     "canton": "Genf",
-    "municipality": "Genčve"
+    "municipality": "Genève"
   },
   "1208": {
     "canton": "Genf",
-    "municipality": "Genčve"
+    "municipality": "Genève"
   },
   "1209": {
     "canton": "Genf",
-    "municipality": "Genčve"
+    "municipality": "Genève"
   },
   "1212": {
     "canton": "Genf",
@@ -598,11 +598,11 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1224": {
     "canton": "Genf",
-    "municipality": "Chęne-Bougeries, Thônex"
+    "municipality": "Chêne-Bougeries, Thônex"
   },
   "1225": {
     "canton": "Genf",
-    "municipality": "Chęne-Bourg"
+    "municipality": "Chêne-Bourg"
   },
   "1226": {
     "canton": "Genf",
@@ -610,7 +610,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1227": {
     "canton": "Genf",
-    "municipality": "Carouge (GE), Genčve"
+    "municipality": "Carouge (GE), Genève"
   },
   "1228": {
     "canton": "Genf",
@@ -618,7 +618,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1231": {
     "canton": "Genf",
-    "municipality": "Chęne-Bougeries"
+    "municipality": "Chêne-Bougeries"
   },
   "1232": {
     "canton": "Genf",
@@ -670,7 +670,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1247": {
     "canton": "Genf",
-    "municipality": "Aničres"
+    "municipality": "Anières"
   },
   "1248": {
     "canton": "Genf",
@@ -854,7 +854,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1299": {
     "canton": "Waadt",
-    "municipality": "Crans-prčs-Céligny"
+    "municipality": "Crans-près-Céligny"
   },
   "1302": {
     "canton": "Waadt",
@@ -934,7 +934,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1329": {
     "canton": "Waadt",
-    "municipality": "Bretonničres"
+    "municipality": "Bretonnières"
   },
   "1337": {
     "canton": "Waadt",
@@ -1114,7 +1114,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1426": {
     "canton": "Waadt",
-    "municipality": "Concise, Corcelles-prčs-Concise"
+    "municipality": "Concise, Corcelles-près-Concise"
   },
   "1427": {
     "canton": "Waadt",
@@ -1174,7 +1174,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1442": {
     "canton": "Waadt",
-    "municipality": "Montagny-prčs-Yverdon"
+    "municipality": "Montagny-près-Yverdon"
   },
   "1443": {
     "canton": "Waadt",
@@ -1214,7 +1214,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1464": {
     "canton": "Waadt",
-    "municipality": "Chavannes-le-Chęne, Chęne-Pâquier"
+    "municipality": "Chavannes-le-Chêne, Chêne-Pâquier"
   },
   "1468": {
     "canton": "Freiburg",
@@ -1330,7 +1330,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1533": {
     "canton": "Freiburg",
-    "municipality": "Méničres"
+    "municipality": "Ménières"
   },
   "1534": {
     "canton": "Freiburg",
@@ -1394,7 +1394,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1562": {
     "canton": "Waadt",
-    "municipality": "Corcelles-prčs-Payerne"
+    "municipality": "Corcelles-près-Payerne"
   },
   "1563": {
     "canton": "Freiburg",
@@ -1586,7 +1586,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1647": {
     "canton": "Freiburg",
-    "municipality": "Corbičres"
+    "municipality": "Corbières"
   },
   "1648": {
     "canton": "Freiburg",
@@ -1598,7 +1598,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1651": {
     "canton": "Freiburg",
-    "municipality": "Corbičres"
+    "municipality": "Corbières"
   },
   "1652": {
     "canton": "Freiburg",
@@ -1622,7 +1622,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1658": {
     "canton": "Waadt",
-    "municipality": "Rossiničre"
+    "municipality": "Rossinière"
   },
   "1659": {
     "canton": "Waadt",
@@ -1638,7 +1638,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1663": {
     "canton": "Freiburg",
-    "municipality": "Gruyčres"
+    "municipality": "Gruyères"
   },
   "1665": {
     "canton": "Freiburg",
@@ -1690,7 +1690,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1680": {
     "canton": "Freiburg",
-    "municipality": "Mézičres (FR), Romont (FR)"
+    "municipality": "Mézières (FR), Romont (FR)"
   },
   "1681": {
     "canton": "Freiburg",
@@ -1706,7 +1706,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1684": {
     "canton": "Freiburg",
-    "municipality": "Mézičres (FR)"
+    "municipality": "Mézières (FR)"
   },
   "1685": {
     "canton": "Freiburg",
@@ -1814,7 +1814,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1724": {
     "canton": "Freiburg",
-    "municipality": "Le Mouret, Ferpicloz, Senčdes"
+    "municipality": "Le Mouret, Ferpicloz, Senèdes"
   },
   "1725": {
     "canton": "Freiburg",
@@ -1958,7 +1958,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1783": {
     "canton": "Freiburg",
-    "municipality": "Barberęche"
+    "municipality": "Barberêche"
   },
   "1784": {
     "canton": "Freiburg",
@@ -2310,7 +2310,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1927": {
     "canton": "Wallis",
-    "municipality": "Vollčges"
+    "municipality": "Vollèges"
   },
   "1928": {
     "canton": "Wallis",
@@ -2326,7 +2326,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1933": {
     "canton": "Wallis",
-    "municipality": "Sembrancher, Vollčges"
+    "municipality": "Sembrancher, Vollèges"
   },
   "1934": {
     "canton": "Wallis",
@@ -2338,27 +2338,27 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1937": {
     "canton": "Wallis",
-    "municipality": "Orsičres"
+    "municipality": "Orsières"
   },
   "1938": {
     "canton": "Wallis",
-    "municipality": "Orsičres"
+    "municipality": "Orsières"
   },
   "1941": {
     "canton": "Wallis",
-    "municipality": "Vollčges"
+    "municipality": "Vollèges"
   },
   "1942": {
     "canton": "Wallis",
-    "municipality": "Vollčges"
+    "municipality": "Vollèges"
   },
   "1943": {
     "canton": "Wallis",
-    "municipality": "Orsičres"
+    "municipality": "Orsières"
   },
   "1944": {
     "canton": "Wallis",
-    "municipality": "Orsičres"
+    "municipality": "Orsières"
   },
   "1945": {
     "canton": "Wallis",
@@ -2410,7 +2410,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1965": {
     "canton": "Wallis",
-    "municipality": "Savičse"
+    "municipality": "Savièse"
   },
   "1966": {
     "canton": "Wallis",
@@ -2470,19 +2470,19 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "1983": {
     "canton": "Wallis",
-    "municipality": "Evolčne"
+    "municipality": "Evolène"
   },
   "1984": {
     "canton": "Wallis",
-    "municipality": "Evolčne"
+    "municipality": "Evolène"
   },
   "1985": {
     "canton": "Wallis",
-    "municipality": "Evolčne"
+    "municipality": "Evolène"
   },
   "1986": {
     "canton": "Wallis",
-    "municipality": "Evolčne"
+    "municipality": "Evolène"
   },
   "1987": {
     "canton": "Wallis",
@@ -2578,11 +2578,11 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "2035": {
     "canton": "Neuenburg",
-    "municipality": "Corcelles-Cormondrčche"
+    "municipality": "Corcelles-Cormondrèche"
   },
   "2036": {
     "canton": "Neuenburg",
-    "municipality": "Corcelles-Cormondrčche"
+    "municipality": "Corcelles-Cormondrèche"
   },
   "2037": {
     "canton": "Neuenburg",
@@ -2650,11 +2650,11 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "2074": {
     "canton": "Neuenburg",
-    "municipality": "La Tčne"
+    "municipality": "La Tène"
   },
   "2075": {
     "canton": "Neuenburg",
-    "municipality": "La Tčne"
+    "municipality": "La Tène"
   },
   "2087": {
     "canton": "Neuenburg",
@@ -2710,7 +2710,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "2126": {
     "canton": "Neuenburg",
-    "municipality": "Les Verričres"
+    "municipality": "Les Verrières"
   },
   "2127": {
     "canton": "Neuenburg",
@@ -2758,7 +2758,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "2333": {
     "canton": "Bern",
-    "municipality": "La Ferričre"
+    "municipality": "La Ferrière"
   },
   "2336": {
     "canton": "Jura",
@@ -2874,7 +2874,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "2523": {
     "canton": "Neuenburg",
-    "municipality": "Ligničres"
+    "municipality": "Lignières"
   },
   "2525": {
     "canton": "Neuenburg",
@@ -3150,7 +3150,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "2805": {
     "canton": "Jura",
-    "municipality": "Soyhičres"
+    "municipality": "Soyhières"
   },
   "2806": {
     "canton": "Jura",
@@ -5122,7 +5122,7 @@ export const SWISS_POSTAL_CODES: Record<string, SwissPostalCodeEntry> = {
   },
   "3972": {
     "canton": "Wallis",
-    "municipality": "Mičge"
+    "municipality": "Miège"
   },
   "3973": {
     "canton": "Wallis",
@@ -12837,7 +12837,10 @@ const REGION_SEARCH_ENTRIES = REGION_NAMES.map((name) => ({
 }));
 
 export function searchSwissPostalCodes(query: string, limit = 12): string[] {
-  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedQuery = query.slice(0, 80).trim().toLowerCase();
+  const safeLimit = Number.isFinite(limit)
+    ? Math.min(Math.max(Math.floor(limit), 1), 50)
+    : 12;
   if (!normalizedQuery) {
     return [];
   }
@@ -12865,7 +12868,7 @@ export function searchSwissPostalCodes(query: string, limit = 12): string[] {
 
     matches.push(entry.label);
 
-    if (matches.length >= limit) {
+    if (matches.length >= safeLimit) {
       break;
     }
   }

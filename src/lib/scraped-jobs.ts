@@ -1,10 +1,17 @@
-import fs from "fs";
-import path from "path";
-import { supabase } from "@/lib/supabase";
+import "server-only";
+
+import { createAdminClient } from "@/lib/supabase";
+import { validateRawJobIdentity } from "@/lib/job-safety";
+import {
+  getPublicJobDateBounds,
+  isPublicJobNew,
+  validatePublicJobDate,
+} from "@/lib/job-freshness";
 
 const TRADE = "zimmermann";
 
 export interface ScrapedJob {
+  trade: string;
   id: string;
   title: string;
   company: string;
@@ -22,7 +29,7 @@ export interface ScrapedJob {
   salary: string;
   jobUrl: string;
   source: string;
-  isRemote: boolean;
+  isRemote: boolean | null;
   companyUrl: string;
 }
 
@@ -34,62 +41,77 @@ const CACHE_TTL_MS = 300_000;
 let cachedJobs: ScrapedJob[] | null = null;
 let cachedAt = 0;
 
-interface DbRow {
+export interface DbRow {
   id: string;
   title: string;
   company: string;
   location: string;
-  type: string;
-  workload: string;
+  type: string | null;
+  workload: string | null;
   description: string;
-  full_description: string;
-  responsibilities: string[];
-  requirements: string[];
-  benefits: string[];
+  full_description?: string;
+  responsibilities?: string[];
+  requirements?: string[];
+  benefits?: string[];
   date_posted: string | null;
   is_new: boolean;
   is_urgent: boolean;
   salary: string;
-  job_url: string;
-  source: string;
-  is_remote: boolean;
-  company_url: string;
+  job_url?: string;
+  source?: string;
+  is_remote: boolean | null;
+  company_url?: string;
 }
+
+export const PUBLICATION_SELECT_FIELDS = [
+  "id",
+  "title",
+  "company",
+  "location",
+  "type",
+  "workload",
+  "description",
+  "date_posted",
+  "is_new",
+  "is_urgent",
+  "salary",
+  "job_url",
+  "source",
+  "is_remote",
+];
+
+const PUBLICATION_SELECT = PUBLICATION_SELECT_FIELDS.join(",");
 
 function mapRowToScrapedJob(row: DbRow): ScrapedJob {
   return {
+    trade: TRADE,
     id: row.id,
     title: row.title,
     company: row.company,
     location: row.location,
-    type: row.type,
-    workload: row.workload,
+    type: row.type ?? "",
+    workload: row.workload ?? "",
     description: row.description,
-    fullDescription: row.full_description,
+    fullDescription: row.full_description ?? "",
     responsibilities: row.responsibilities ?? [],
     requirements: row.requirements ?? [],
     benefits: row.benefits ?? [],
     datePosted: row.date_posted ?? "",
-    isNew: row.is_new,
-    isUrgent: row.is_urgent,
+    isNew: isPublicJobNew(row.date_posted),
+    isUrgent: false,
     salary: row.salary,
-    jobUrl: row.job_url,
-    source: row.source,
+    jobUrl: row.job_url ?? "",
+    source: row.source ?? "",
     isRemote: row.is_remote,
-    companyUrl: row.company_url,
+    companyUrl: row.company_url ?? "",
   };
 }
 
-// --- JSON fallback (resilience if Supabase is unreachable) ---
-function loadFromJson(): ScrapedJob[] {
-  try {
-    const filePath = path.join(process.cwd(), "src", "data", "scraped-jobs.json");
-    const raw = fs.readFileSync(filePath, "utf-8");
-    const data = JSON.parse(raw) as { jobs: ScrapedJob[] };
-    return data.jobs ?? [];
-  } catch {
-    return [];
-  }
+export function mapVerifiedDbRow(row: DbRow): ScrapedJob | null {
+  const job = mapRowToScrapedJob(row);
+  return validateRawJobIdentity(job) === null && validatePublicJobDate(job.datePosted) === null
+    ? job
+    : null;
 }
 
 const SUPABASE_PAGE_SIZE = 1000;
@@ -97,7 +119,7 @@ const SUPABASE_PAGE_SIZE = 1000;
 /**
  * Load all scraped jobs from Supabase (with TTL cache).
  * Paginates through all results since Supabase limits to 1000 rows per request.
- * Falls back to local JSON if Supabase is unreachable.
+ * Fails closed with an empty list if Supabase is unreachable.
  */
 export async function loadScrapedJobs(): Promise<ScrapedJob[]> {
   if (cachedJobs && Date.now() - cachedAt < CACHE_TTL_MS) {
@@ -105,14 +127,17 @@ export async function loadScrapedJobs(): Promise<ScrapedJob[]> {
   }
 
   try {
+    const supabase = createAdminClient();
+    const { minDate } = getPublicJobDateBounds();
     const allRows: DbRow[] = [];
     let from = 0;
 
     while (true) {
       const { data, error } = await supabase
         .from("jobs")
-        .select("*")
+        .select(PUBLICATION_SELECT)
         .eq("trade", TRADE)
+        .gte("date_posted", minDate)
         .order("date_posted", { ascending: false })
         .range(from, from + SUPABASE_PAGE_SIZE - 1);
 
@@ -120,7 +145,7 @@ export async function loadScrapedJobs(): Promise<ScrapedJob[]> {
         break;
       }
 
-      allRows.push(...(data as DbRow[]));
+      allRows.push(...(data as unknown as DbRow[]));
 
       if (data.length < SUPABASE_PAGE_SIZE) {
         break;
@@ -130,48 +155,44 @@ export async function loadScrapedJobs(): Promise<ScrapedJob[]> {
     }
 
     if (allRows.length > 0) {
-      cachedJobs = allRows.map(mapRowToScrapedJob);
+      cachedJobs = allRows.flatMap((row) => {
+        const job = mapVerifiedDbRow(row);
+        return job ? [job] : [];
+      });
       cachedAt = Date.now();
       return cachedJobs;
     }
   } catch {
-    // fall through to JSON fallback
+    // Fail closed.
   }
 
-  return loadFromJson();
+  return [];
 }
 
-/** Get a single job by ID with full description.
- *  Checks the in-memory cache first to avoid a DB round-trip
- *  when loadScrapedJobs has already been called recently.
- */
+/** Get a single job by ID with full description */
 export async function getScrapedJobById(id: string): Promise<ScrapedJob | null> {
-  // Fast path: check in-memory cache first (avoids Supabase round-trip)
-  if (cachedJobs && Date.now() - cachedAt < CACHE_TTL_MS) {
-    const cached = cachedJobs.find((j) => j.id === id);
-    if (cached) {
-      return cached;
-    }
-  }
-
   try {
+    const supabase = createAdminClient();
+    const { minDate } = getPublicJobDateBounds();
     const { data, error } = await supabase
       .from("jobs")
-      .select("*")
+      .select(PUBLICATION_SELECT)
       .eq("id", id)
       .eq("trade", TRADE)
+      .gte("date_posted", minDate)
       .single();
 
     if (!error && data) {
-      return mapRowToScrapedJob(data as DbRow);
+      const job = mapVerifiedDbRow(data as unknown as DbRow);
+      if (job) {
+        return job;
+      }
     }
   } catch {
-    // fall through to JSON fallback
+    // Fail closed.
   }
 
-  // Fallback: search local JSON
-  const jobs = loadFromJson();
-  return jobs.find((j) => j.id === id) ?? null;
+  return null;
 }
 
 let cachedMeta: { scrapedAt: string; totalJobs: number } | null = null;
@@ -182,10 +203,11 @@ export async function getScrapedMeta(): Promise<{ scrapedAt: string; totalJobs: 
   if (cachedMeta && Date.now() - cachedMetaAt < META_CACHE_TTL_MS) return cachedMeta;
 
   try {
+    const supabase = createAdminClient();
     const { data, error } = await supabase
-      .from("scrape_metadata")
-      .select("*")
-      .eq("id", 1)
+      .from("trade_scrape_metadata")
+      .select("scraped_at,total_jobs")
+      .eq("trade", TRADE)
       .single();
 
     if (!error && data) {

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.zimmermannjob.ch";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://zimmermannjob.ch";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -8,19 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: ["/"],
-        disallow: [
-          "/api/",
-          "/arbeitgeber/login",
-          "/arbeitgeber/kandidaten",
-          "/?*sort=",
-          "/?*type=",
-          "/?*workload=",
-          "/?*offset=",
-          "/?*q=",
-          "/?*radiusKm=",
-          "/?*remote=",
-          "/?*postedWithinDays=",
-        ],
+        disallow: ["/api/", "/arbeitgeber/login", "/arbeitgeber/kandidaten"],
       },
       {
         userAgent: "GPTBot",

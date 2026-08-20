@@ -1,11 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
-import { UploadCloud, CheckCircle2, Loader2, Zap, X, FileText, AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileText, Loader2, UploadCloud, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useHaptic } from "@/hooks/use-haptic";
+import {
+  MAX_APPLICATION_PDF_BYTES,
+  hasPdfMagic,
+  isValidEmail,
+  isValidPdfFilename,
+  isValidPhone,
+} from "@/lib/application-validation";
 import {
   Dialog,
   DialogContent,
@@ -15,67 +23,82 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const ACCEPTED_TYPES = [
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-
 interface ApplyModalProps {
   jobId: string;
   jobTitle: string;
-  company: string;
   onOpen?: () => void;
 }
 
-export function ApplyModal({ jobId, jobTitle, company, onOpen }: ApplyModalProps) {
+export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
   const { trigger } = useHaptic();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [website, setWebsite] = useState("");
+  const [consent, setConsent] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-
+  const formStartedAtRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
     setName("");
     setEmail("");
     setPhone("");
+    setWebsite("");
+    setConsent(false);
     setCvFile(null);
     setError(null);
     setIsSuccess(false);
     setIsSubmitting(false);
+    formStartedAtRef.current = 0;
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
-    if (!open) {
-      setTimeout(resetForm, 300);
+    if (open) {
+      formStartedAtRef.current = Date.now();
+      onOpen?.();
+    } else {
+      window.setTimeout(resetForm, 300);
     }
   };
 
-  const validateFile = (file: File): string | null => {
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      return "Bitte lade eine PDF- oder DOCX-Datei hoch.";
+  const validateFile = async (file: File): Promise<string | null> => {
+    const filename = file.name.normalize("NFKC").trim();
+    if (
+      file.type !== "application/pdf" ||
+      !isValidPdfFilename(filename)
+    ) {
+      return "Bitte lade ausschliesslich eine PDF-Datei mit einem gültigen Dateinamen hoch.";
     }
-    if (file.size > MAX_FILE_SIZE) {
-      return "Die Datei darf maximal 10 MB gross sein.";
+    if (file.size < 10 || file.size > MAX_APPLICATION_PDF_BYTES) {
+      return "Die PDF-Datei darf maximal 5 MB gross sein.";
+    }
+
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (!hasPdfMagic(bytes)) {
+        return "Die ausgewählte Datei ist keine gültige PDF-Datei.";
+      }
+    } catch {
+      return "Die PDF-Datei konnte nicht gelesen werden.";
     }
     return null;
   };
 
-  const handleFileSelect = (file: File) => {
-    const fileError = validateFile(file);
+  const handleFileSelect = async (file: File) => {
+    const fileError = await validateFile(file);
     if (fileError) {
       trigger("error");
+      setCvFile(null);
       setError(fileError);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
     trigger("selection");
@@ -83,73 +106,88 @@ export function ApplyModal({ jobId, jobTitle, company, onOpen }: ApplyModalProps
     setCvFile(file);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
-    }
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) void handleFileSelect(file);
   };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
+  const handleDrop = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      handleFileSelect(file);
-    }
+    const file = event.dataTransfer.files[0];
+    if (file) void handleFileSelect(file);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
+  const handleDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
     setIsDragging(true);
   }, []);
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
+  const handleDragLeave = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
     setIsDragging(false);
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError(null);
-    setIsSubmitting(true);
 
+    if (!isValidEmail(email.trim()) || !isValidPhone(phone.trim())) {
+      setError("Bitte prüfe deine E-Mail-Adresse und Telefonnummer.");
+      trigger("error");
+      return;
+    }
+    if (!cvFile || !consent) {
+      setError("Bitte füge einen PDF-Lebenslauf hinzu und bestätige die Einwilligung.");
+      trigger("error");
+      return;
+    }
+
+    const fileError = await validateFile(cvFile);
+    if (fileError) {
+      setError(fileError);
+      trigger("error");
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       const formData = new FormData();
       formData.append("jobId", jobId);
-      formData.append("jobTitle", jobTitle);
-      formData.append("name", name);
-      formData.append("email", email);
-      formData.append("phone", phone);
-      if (cvFile) {
-        formData.append("cv", cvFile);
-      }
+      formData.append("name", name.trim());
+      formData.append("email", email.trim());
+      formData.append("phone", phone.trim());
+      formData.append("website", website);
+      formData.append("formStartedAt", String(formStartedAtRef.current));
+      formData.append("consent", "yes");
+      formData.append("cv", cvFile);
 
-      const res = await fetch("/api/applications", {
+      const response = await fetch("/api/applications", {
         method: "POST",
         body: formData,
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
         throw new Error(
-          (data as { error?: string }).error || "Bewerbung konnte nicht gesendet werden."
+          (data as { error?: string }).error || "Online-Bewerbungen sind derzeit nicht verfügbar."
         );
       }
 
       setIsSubmitting(false);
       setIsSuccess(true);
       trigger("success");
-
-      setTimeout(() => {
-        setIsOpen(false);
-        setTimeout(resetForm, 300);
-      }, 2500);
-    } catch (err) {
+    } catch (submissionError) {
       setIsSubmitting(false);
       trigger("error");
-      setError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten.");
+      setError(
+        submissionError instanceof Error
+          ? submissionError.message
+          : "Online-Bewerbungen sind derzeit nicht verfügbar."
+      );
     }
   };
 
@@ -162,37 +200,48 @@ export function ApplyModal({ jobId, jobTitle, company, onOpen }: ApplyModalProps
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button
-          className="w-full h-12 text-base sm:text-lg font-bold shadow-lg shadow-primary/20 rounded-xl btn-interactive"
-          onClick={onOpen}
-        >
-          Jetzt bewerben
+        <Button className="w-full h-12 text-base sm:text-lg font-bold shadow-lg shadow-primary/20 rounded-xl btn-interactive">
+          Angaben übermitteln
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="w-[calc(100%-1rem)] sm:w-full max-w-none sm:max-w-[min(425px,calc(100vw-2rem))] max-h-[92dvh] sm:max-h-[85dvh] overflow-y-auto rounded-2xl p-4 sm:p-6 animate-modal-in top-auto bottom-2 sm:top-[50%] sm:bottom-auto translate-y-0 sm:translate-y-[-50%]">
+      <DialogContent className="w-[calc(100%-1rem)] sm:w-full max-w-none sm:max-w-[min(480px,calc(100vw-2rem))] max-h-[92dvh] sm:max-h-[85dvh] overflow-y-auto rounded-2xl p-4 sm:p-6 animate-modal-in top-auto bottom-2 sm:top-[50%] sm:bottom-auto translate-y-0 sm:translate-y-[-50%]">
         {!isSuccess ? (
           <>
             <DialogHeader>
               <DialogTitle className="text-xl sm:text-2xl font-bold text-slate-900 break-words pr-8">
-                Bewerben für {jobTitle}
+                Angaben für {jobTitle}
               </DialogTitle>
-              <DialogDescription className="text-slate-500">
-                Schnell und unkompliziert in unter 2 Minuten
+              <DialogDescription className="text-slate-600">
+                Die Angaben werden vom Betreiber dieser Plattform zur internen Prüfung gespeichert. Es erfolgt keine automatische Weiterleitung an einen Arbeitgeber.
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6 mt-4">
-              <div className="space-y-3 sm:space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5 mt-4">
+              <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+                <Label htmlFor="apply-website">Website</Label>
+                <Input
+                  id="apply-website"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={website}
+                  onChange={(event) => setWebsite(event.target.value)}
+                />
+              </div>
+
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="apply-name">Vollständiger Name</Label>
                   <Input
                     id="apply-name"
+                    autoComplete="name"
+                    maxLength={100}
                     required
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(event) => setName(event.target.value)}
                     placeholder="Max Muster"
-                    className="h-11 rounded-lg transition-shadow duration-200 focus-visible:shadow-[0_0_0_3px_oklch(0.795_0.155_75_/_20%)]"
+                    className="h-11 rounded-lg"
                   />
                 </div>
                 <div className="space-y-2">
@@ -200,11 +249,14 @@ export function ApplyModal({ jobId, jobTitle, company, onOpen }: ApplyModalProps
                   <Input
                     id="apply-email"
                     type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    maxLength={254}
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(event) => setEmail(event.target.value)}
                     placeholder="max@beispiel.ch"
-                    className="h-11 rounded-lg transition-shadow duration-200 focus-visible:shadow-[0_0_0_3px_oklch(0.795_0.155_75_/_20%)]"
+                    className="h-11 rounded-lg"
                   />
                 </div>
                 <div className="space-y-2">
@@ -212,19 +264,24 @@ export function ApplyModal({ jobId, jobTitle, company, onOpen }: ApplyModalProps
                   <Input
                     id="apply-phone"
                     type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    maxLength={40}
                     required
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(event) => setPhone(event.target.value)}
                     placeholder="+41 79 123 45 67"
-                    className="h-11 rounded-lg transition-shadow duration-200 focus-visible:shadow-[0_0_0_3px_oklch(0.795_0.155_75_/_20%)]"
+                    className="h-11 rounded-lg"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Lebenslauf / CV</Label>
+                  <Label htmlFor="apply-cv">Lebenslauf / CV als PDF</Label>
                   <input
+                    id="apply-cv"
                     ref={fileInputRef}
                     type="file"
-                    accept=".pdf,.doc,.docx"
+                    accept="application/pdf,.pdf"
+                    required
                     className="sr-only"
                     onChange={handleFileChange}
                   />
@@ -234,43 +291,35 @@ export function ApplyModal({ jobId, jobTitle, company, onOpen }: ApplyModalProps
                       role="button"
                       tabIndex={0}
                       onClick={() => fileInputRef.current?.click()}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click();
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") fileInputRef.current?.click();
                       }}
                       onDrop={handleDrop}
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
-                      className={`border-2 border-dashed rounded-xl p-5 sm:p-6 flex flex-col items-center justify-center text-center transition-colors duration-200 cursor-pointer group ${
-                        isDragging
-                          ? "border-primary bg-primary/5"
-                          : "border-slate-200 hover:bg-slate-50 hover:border-primary/50"
+                      className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center transition-colors cursor-pointer ${
+                        isDragging ? "border-primary bg-primary/5" : "border-slate-200 hover:bg-slate-50"
                       }`}
                     >
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200 ease-out">
-                        <UploadCloud className="h-6 w-6 text-primary" />
-                      </div>
-                      <p className="text-sm font-medium text-slate-900">
-                        Klicken zum Hochladen oder Datei hineinziehen
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1">PDF, DOCX bis 10 MB</p>
+                      <UploadCloud className="h-7 w-7 text-primary mb-2" />
+                      <p className="text-sm font-medium text-slate-900">PDF auswählen oder hineinziehen</p>
+                      <p className="text-xs text-slate-500 mt-1">Ausschliesslich PDF, maximal 5 MB</p>
                     </div>
                   ) : (
                     <div className="border border-slate-200 rounded-xl p-3 flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <FileText className="h-5 w-5 text-primary" />
-                      </div>
+                      <FileText className="h-5 w-5 text-primary shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-slate-900 truncate">{cvFile.name}</p>
                         <p className="text-xs text-slate-500">{formatFileSize(cvFile.size)}</p>
                       </div>
                       <button
                         type="button"
+                        aria-label="PDF entfernen"
                         onClick={() => {
-                          trigger("selection");
                           setCvFile(null);
                           if (fileInputRef.current) fileInputRef.current.value = "";
                         }}
-                        className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                        className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -279,8 +328,30 @@ export function ApplyModal({ jobId, jobTitle, company, onOpen }: ApplyModalProps
                 </div>
               </div>
 
+              <label className="flex items-start gap-3 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  required
+                  checked={consent}
+                  onChange={(event) => setConsent(event.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-slate-300"
+                />
+                <span>
+                  Ich willige ein, dass der in der{" "}
+                  <Link
+                    href="/datenschutz"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline font-medium"
+                  >
+                    Datenschutzerklärung
+                  </Link>{" "}
+                  genannte Verantwortliche meine Angaben und den CV zur Prüfung dieser Anfrage verarbeitet. Mir ist bekannt, dass keine automatische Weiterleitung an den Arbeitgeber erfolgt.
+                </span>
+              </label>
+
               {error && (
-                <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3" role="alert">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
@@ -288,32 +359,27 @@ export function ApplyModal({ jobId, jobTitle, company, onOpen }: ApplyModalProps
 
               <Button
                 type="submit"
-                className="w-full h-12 rounded-xl text-base font-bold btn-interactive"
-                disabled={isSubmitting}
+                className="w-full h-12 rounded-xl text-base font-bold"
+                disabled={isSubmitting || !cvFile || !consent}
               >
                 {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Bewerbung wird gesendet...
-                  </>
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Angaben werden geprüft...</>
                 ) : (
-                  <>
-                    <Zap className="mr-2 h-5 w-5 fill-current" />
-                    Bewerbung absenden
-                  </>
+                  "Angaben zur Prüfung speichern"
                 )}
               </Button>
             </form>
           </>
         ) : (
-          <div className="py-10 sm:py-12 flex flex-col items-center justify-center text-center space-y-4">
-            <div className="h-20 w-20 bg-green-100 rounded-full flex items-center justify-center mb-2 animate-success-pop">
-              <CheckCircle2 className="h-10 w-10 text-green-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-900">Bewerbung gesendet!</h2>
-            <p className="text-slate-500">
-              Deine Bewerbung wurde erfolgreich übermittelt. Viel Erfolg!
+          <div className="py-10 flex flex-col items-center justify-center text-center space-y-4">
+            <CheckCircle2 className="h-14 w-14 text-green-600" />
+            <h2 className="text-2xl font-bold text-slate-900">Angaben gespeichert</h2>
+            <p className="text-slate-600">
+              Deine Angaben wurden zur internen Prüfung gespeichert. Dies bestätigt keine Weiterleitung an den Arbeitgeber.
             </p>
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+              Schliessen
+            </Button>
           </div>
         )}
       </DialogContent>

@@ -1,29 +1,41 @@
-import type { Job } from "@/lib/mock-data";
-
-export type JobSource = "mock" | "generated" | "scraped";
 export type JobSort = "newest" | "oldest" | "relevance";
 export type RemoteFilter = "any" | "true" | "false";
 
-export interface SearchContext {
-  query: string;
+/**
+ * Public job shape. Employer identities, source URLs, raw descriptions, and
+ * contact details must never cross this boundary.
+ */
+export interface JobListing {
+  id: string;
+  title: string;
   location: string;
-}
-
-export interface GeneratedJob extends Job {
-  source: "generated";
-  searchContext: SearchContext;
-}
-
-export interface JobListing extends Job {
-  source: JobSource;
+  type: string;
+  workload: string;
+  description: string;
+  responsibilities: string[];
+  requirements: string[];
+  benefits: string[];
+  datePosted: string;
+  isNew: boolean;
+  isUrgent: boolean;
   salary?: string;
-  jobUrl?: string;
   isRemote?: boolean;
-  companyUrl?: string;
-  scrapedSource?: string;
   relevanceScore?: number;
-  searchContext?: SearchContext;
-  fullDescription?: string;
+}
+
+/**
+ * Evergreen direct-hire profile. This is deliberately not a JobListing: it has
+ * no employer, vacancy, source, salary, application, or job-detail fields.
+ */
+export interface DirectHireOpportunity {
+  kind: "direct-hire-opportunity";
+  id: string;
+  role: string;
+  location: string;
+  engagement: "Direktanstellung";
+  preferenceSummary: string[];
+  process: string;
+  contactHref: string;
 }
 
 export interface JobFacetCount {

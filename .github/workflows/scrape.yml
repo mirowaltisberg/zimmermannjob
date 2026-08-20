@@ -4,6 +4,19 @@ on:
   schedule:
     - cron: "0 9 * * *"
   workflow_dispatch:
+    inputs:
+      confirm_publish:
+        description: "Type PUBLISH to allow the guarded publish job"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zimmermannjob-daily-scrape
+  cancel-in-progress: false
 
 jobs:
   scrape:
@@ -14,6 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         chunk: [0, 1, 2, 3, 4]
+      max-parallel: 2
 
     steps:
       - uses: actions/checkout@v4
@@ -22,12 +36,57 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: pip install python-jobspy supabase
+      - name: Install pinned scraper dependency
+        run: python -m pip install --disable-pip-version-check "python-jobspy==1.1.82"
 
       - name: Run scraper (chunk ${{ matrix.chunk }}/5)
+        run: >-
+          python scripts/scrape-jobs.py
+          --results 50
+          --max-age-days 35
+          --chunk ${{ matrix.chunk }}
+          --total-chunks 5
+          --output scrape-output/chunk-${{ matrix.chunk }}.json
+
+      - name: Upload isolated scrape chunk
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrape-chunk-${{ matrix.chunk }}
+          path: scrape-output/chunk-${{ matrix.chunk }}.json
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_publish == 'PUBLISH' && vars.ZIMMERMANN_PUBLISHING_APPROVED == 'true' }}
+    needs: scrape
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned publisher dependency
+        run: python -m pip install --disable-pip-version-check "supabase==2.31.0"
+
+      - name: Download all scrape chunks
+        uses: actions/download-artifact@v4
+        with:
+          pattern: scrape-chunk-*
+          path: scrape-output
+          merge-multiple: true
+
+      - name: Validate, merge and publish one snapshot
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python scripts/scrape-jobs.py --results 50 --chunk ${{ matrix.chunk }} --total-chunks 5
-
+        run: >-
+          python scripts/publish-jobs.py
+          --input scrape-output/chunk-*.json
+          --expected-files 5
+          --max-age-days 35
+          --min-jobs 75
+          --min-retention-ratio 0.50

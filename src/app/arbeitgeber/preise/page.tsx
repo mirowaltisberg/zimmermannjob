@@ -1,72 +1,45 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { SiteFooter } from "@/components/site-footer";
+import { SiteBrand } from "@/components/site-brand";
 
 export const metadata: Metadata = {
-  title: "Preise & Pakete",
+  title: "Angebot für Arbeitgeber im Aufbau",
   description:
-    "Erfahren Sie mehr über die Inseratepreise und Pakete auf zimmermannjob.ch — der spezialisierten Jobbörse für Holzbau-Fachkräfte.",
+    "Das Publikationsangebot für Arbeitgeber auf zimmermannjob.ch ist noch nicht buchbar.",
   alternates: {
     canonical: "/arbeitgeber/preise",
   },
+  robots: { index: false, follow: true },
 };
 
 export default function PreisePage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="border-b header-blur sticky top-0 z-30">
-        <div className="container mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center">
+      <header className="trade-header border-b sticky top-0 z-30">
+        <div className="container mx-auto px-4 sm:px-6 h-16 sm:h-[4.5rem] flex items-center">
           <Link href="/" className="flex items-center shrink-0">
-            <Image
-              src="/logo.svg"
-              alt="zimmermannjob.ch"
-              width={142}
-              height={29}
-              className="h-7 sm:h-8 w-auto"
-              priority
-            />
+            <SiteBrand />
           </Link>
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto px-4 sm:px-6 py-12 sm:py-16 max-w-3xl">
+      <main id="main-content" className="flex-1 container mx-auto px-4 sm:px-6 py-12 sm:py-16 max-w-3xl">
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mb-4">
-          Preise & Pakete
+          Angebot für Arbeitgeber
         </h1>
         <p className="text-slate-600 mb-8 leading-relaxed">
-          Publizieren Sie Ihre offenen Stellen auf zimmermannjob.ch — der
-          spezialisierten Jobbörse für Holzbau-Fachkräfte in der Schweiz. Wir
-          bieten attraktive Konditionen für Einzelinserate und Firmenpakete.
+          Das Publikationsangebot für Arbeitgeber befindet sich im Aufbau.
+          Derzeit sind weder Self-Service-Inserate noch veröffentlichte Pakete
+          oder Preise buchbar.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-2">Einzelinserat</h2>
-              <p className="text-slate-600 text-sm mb-4">
-                Eine Stellenanzeige für 30 Tage, mit voller Sichtbarkeit auf
-                allen relevanten Suchseiten.
-              </p>
-              <p className="text-sm text-slate-500">Preis auf Anfrage</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-2">Firmenpaket</h2>
-              <p className="text-slate-600 text-sm mb-4">
-                Mehrere Stellenanzeigen mit Mengenrabatt, Logo-Integration und
-                bevorzugter Platzierung.
-              </p>
-              <p className="text-sm text-slate-500">Preis auf Anfrage</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="text-center">
-          <p className="text-slate-600 mb-4">Kontaktieren Sie uns für ein individuelles Angebot:</p>
+        <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
+          <p className="text-slate-600 mb-4">
+            Sie können uns Ihr Interesse mitteilen. Eine Kontaktaufnahme
+            begründet noch keine Buchung oder Publikation.
+          </p>
           <Button asChild size="lg">
             <a href="mailto:info@zimmermannjob.ch">info@zimmermannjob.ch kontaktieren</a>
           </Button>

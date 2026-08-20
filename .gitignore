@@ -44,6 +44,13 @@ next-env.d.ts
 
 # python venv
 scripts/.venv/
+__pycache__/
+*.py[cod]
+
+# local Supabase CLI state
+supabase/.temp/
 
 # scraped data (lives in Supabase now)
 src/data/scraped-jobs.json
+.playwright-mcp/
+.env*.local

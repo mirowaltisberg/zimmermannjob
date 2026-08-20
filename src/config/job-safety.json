@@ -1,0 +1,87 @@
+{
+  "trade": "zimmermann",
+  "idPattern": "^scraped-zimmermann-[0-9a-f]{12}$",
+  "allowedSources": ["google", "indeed", "linkedin"],
+  "tradeContextPatterns": [
+    "zimmermann", "zimmerin", "zimmerei", "holzbau", "holzkonstruktion",
+    "abbund", "holzrahmenbau", "elementbau"
+  ],
+  "hardNegativeTitlePatterns": [
+    "zimmerreinigung", "zimmermädchen", "zimmermaedchen", "room attendant", "pflege",
+    "spitex", "gesundheit", "sozial", "verkauf", "sales", "marketing", "jurist",
+    "anwalt", "fahrer", "chauffeur", "logistik", "reinigung", "koch", "küche",
+    "kueche", "arzt", "medizin", "software", "developer", "data scientist",
+    "human resources", "product manager", "product owner", "frontend", "backend",
+    "devops", "buchhalt", "accounting", "controller", "internship", "ingénieur",
+    "technicien", "électricien", "elettricista", "disegnatore"
+  ],
+  "otherTradeTitlePatterns": [
+    "elektro", "elektriker", "sanitär", "sanitaer", "heizung", "heizungsinstallateur",
+    "lüftung", "lueftung", "kälte", "kaelte", "klima", "spengler", "dachdecker",
+    "schreiner", "tischler", "möbelschreiner", "moebelschreiner", "bodenleger",
+    "plattenleger", "gärtner", "gaertner", "metallbauer", "maurer", "maler",
+    "hlks", "hvac"
+  ],
+  "highSpecificityTitles": [
+    { "pattern": "holzbau-fachmann|holzbau fachmann|holzbau-fachfrau|holzbau fachfrau", "publicTitle": "Holzbau-Fachperson", "profile": "framing" },
+    { "pattern": "holzbaupolier|holzbau-meister|holzbaumeister", "publicTitle": "Holzbaupolier/in", "profile": "leadership" },
+    { "pattern": "holzbautechniker", "publicTitle": "Holzbautechniker/in", "profile": "planning" },
+    { "pattern": "zimmermann|zimmerin", "publicTitle": "Zimmermann/Zimmerin", "profile": "framing" }
+  ],
+  "broadTitlesRequiringTradeContext": [
+    { "pattern": "projektleit", "publicTitle": "Projektleiter/in Holzbau", "profile": "leadership" },
+    { "pattern": "bauleit|teamleit|vorarbeiter|polier", "publicTitle": "Vorarbeiter/in Holzbau", "profile": "leadership" },
+    { "pattern": "konstrukteur|zeichner|planer|avor", "publicTitle": "Konstrukteur/in Holzbau", "profile": "planning" },
+    { "pattern": "monteur|elementbauer|abbinder", "publicTitle": "Holzbauer/in Montage", "profile": "assembly" }
+  ],
+  "profiles": {
+    "leadership": {
+      "responsibilities": [
+        "Holzbauprojekte von der AVOR bis zur Montage und Abnahme koordinieren",
+        "Termine, Material, Arbeitssicherheit und Ausführungsqualität steuern",
+        "Werkstatt, Baustelle, Planung und weitere Gewerke abstimmen"
+      ],
+      "requirements": [
+        "Abgeschlossene Ausbildung im Holzbau",
+        "Erfahrung in Projektleitung, Vorarbeit oder Baustellenführung",
+        "Selbstständige, zuverlässige und lösungsorientierte Arbeitsweise"
+      ]
+    },
+    "planning": {
+      "responsibilities": [
+        "Werkstatt- und Montagepläne für Holzbauelemente erstellen",
+        "Anschlüsse, Materialaufbauten und Abbunddaten koordinieren",
+        "Produktions- und Baustellenunterlagen vollständig bereitstellen"
+      ],
+      "requirements": [
+        "Holzbauausbildung mit Erfahrung in Konstruktion oder AVOR",
+        "Sicherer Umgang mit CAD, Massaufnahmen und technischen Unterlagen",
+        "Strukturierte, präzise und teamorientierte Arbeitsweise"
+      ]
+    },
+    "assembly": {
+      "responsibilities": [
+        "Vorgefertigte Holzbauelemente auf der Baustelle versetzen und verbinden",
+        "Anschlüsse, Verankerungen und Bauteilfluchten nach Plan kontrollieren",
+        "Montagearbeiten sicher und wettergerecht abschliessen"
+      ],
+      "requirements": [
+        "Ausbildung oder fundierte Praxis im Holzbau",
+        "Erfahrung mit Montage, Hebemitteln und Arbeiten in der Höhe",
+        "Zuverlässige und sicherheitsbewusste Arbeitsweise"
+      ]
+    },
+    "framing": {
+      "responsibilities": [
+        "Tragende Holzbauteile und Rahmenkonstruktionen nach Plan fertigen",
+        "Elemente abbinden, vormontieren und auf der Baustelle aufrichten",
+        "Masse, Verbindungen und konstruktiven Holzschutz prüfen"
+      ],
+      "requirements": [
+        "Abgeschlossene Ausbildung als Zimmermann/Zimmerin oder gleichwertige Praxis",
+        "Sicherer Umgang mit Abbund, Plänen und Holzbauverbindungen",
+        "Körperliche Belastbarkeit sowie präzise und teamorientierte Arbeitsweise"
+      ]
+    }
+  }
+}

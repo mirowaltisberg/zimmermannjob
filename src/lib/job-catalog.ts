@@ -1,32 +1,33 @@
-import { generateFakeJobById, generateFakeJobs, normalizeSearchInput } from "@/lib/job-generator";
-import { mockJobs, type Job } from "@/lib/mock-data";
+import "server-only";
+
 import {
   getScrapedJobById,
   getScrapedMeta,
   loadScrapedJobs,
   type ScrapedJob,
 } from "@/lib/scraped-jobs";
-import { reconstructScrapedIdFromSlug } from "@/lib/job-slug";
-import { cleanJobList, cleanJobSummary, cleanJobText } from "@/lib/job-text-clean";
+import { cleanJobText } from "@/lib/job-text-clean";
+import { buildPublicJobCopy } from "@/lib/job-public";
+import { serializePublicJob } from "@/lib/public-job-boundary";
+import { classifyZimmermannTitle, isValidZimmermannJobId } from "@/lib/job-safety";
 import { calculateDistanceKm, resolveLocationCoordinate, type Coordinate } from "@/lib/location-distance";
+import { buildDirectHireOpportunities } from "@/lib/direct-hire-opportunities";
 import type {
-  GeneratedJob,
+  DirectHireOpportunity,
   JobFacets,
   JobListing,
   JobSearchParams,
   JobSort,
   RemoteFilter,
-  SearchContext,
 } from "@/lib/job-types";
 
-const FALLBACK_GENERATED_COUNT = 150;
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 200;
 const MIN_RADIUS_KM = 5;
 const MAX_RADIUS_KM = 300;
-const MIN_REAL_RESULTS_FOR_SCRAPED_ONLY = 24;
 const SCRAPE_STALE_HOURS = Math.max(1, Number(process.env.SCRAPE_STALE_HOURS ?? 72));
 const MIN_RELEVANCE_SCORE = 2;
+const NOT_PROVIDED = "Nicht angegeben";
 const COUNTRY_WIDE_LOCATIONS = new Set([
   "schweiz",
   "ganze schweiz",
@@ -36,170 +37,6 @@ const COUNTRY_WIDE_LOCATIONS = new Set([
   "ch",
 ]);
 const coordinateCache = new Map<string, Coordinate | null>();
-
-const POSITIVE_KEYWORDS = [
-  "zimmermann",
-  "zimmer",
-  "holzbau",
-  "holz",
-  "holzkonstruktion",
-  "dachstuhl",
-  "dachkonstruktion",
-  "abbund",
-  "element",
-  "elementbau",
-  "aufrichtung",
-  "monteur",
-  "polier",
-  "vorarbeiter",
-  "bauführer",
-  "holzbautechniker",
-  "holzbauingenieur",
-  "innenausbau",
-  "fassade",
-  "minergie",
-  "trockenbau",
-  "isolierung",
-  "dämmung",
-  "brandschutz",
-  "installat",
-  "wartung",
-  "montage",
-];
-
-const NEGATIVE_KEYWORDS = [
-  "verkäufer",
-  "detailhandel",
-  "pfleger",
-  "pflegefach",
-  "jurist",
-  "staatsanwalt",
-  "küche",
-  "koch",
-  "reinigung",
-  "logistik",
-  "marketing",
-  "hr manager",
-  "data analyst",
-  "praktikum data",
-];
-
-const CORE_TITLE_KEYWORDS = [
-  "zimmermann",
-  "zimmer",
-  "holzbau",
-  "holzkonstruktion",
-  "dachstuhl",
-  "abbund",
-  "element",
-  "aufrichtung",
-  "polier",
-  "vorarbeiter",
-  "bauführer",
-  "techniker",
-  "ingenieur",
-  "projektleiter",
-  "bauleiter",
-  "monteur",
-  "planer",
-  "holz",
-  "fassade",
-  "minergie",
-  "innenausbau",
-  "trockenbau",
-  "elementbau",
-  "holzbautechniker",
-  "holzbauingenieur",
-];
-
-const HARD_NEGATIVE_TITLE_KEYWORDS = [
-  "pflege",
-  "fage",
-  "spitex",
-  "gesundheit",
-  "notfall",
-  "sozial",
-  "verkauf",
-  "sales",
-  "marketing",
-  "jurist",
-  "anwalt",
-  "fahrer",
-  "chauffeur",
-  "logistik",
-  "reinigung",
-  "koch",
-  "küche",
-  "kueche",
-  "hauswirtschaft",
-  "arzt",
-  "medizin",
-  "data",
-  "hr",
-  "human resources",
-];
-
-/** Keywords that uniquely identify THIS trade (zimmermann/holzbau) */
-const TRADE_IDENTITY_KEYWORDS = [
-  "zimmermann",
-  "zimmer",
-  "holzbau",
-  "holzkonstruktion",
-  "dachstuhl",
-  "abbund",
-  "aufrichtung",
-  "holzbauingenieur",
-  "holzbautechniker",
-  "elementbau",
-];
-
-/** Primary keywords from OTHER trades — reject if title matches these without any TRADE_IDENTITY match */
-const OTHER_TRADE_KEYWORDS = [
-  "elektro",
-  "elektriker",
-  "elektroinstallateur",
-  "elektromonteur",
-  "elektroniker",
-  "automatiker",
-  "schaltanlagen",
-  "photovoltaik",
-  "starkstrom",
-  "schwachstrom",
-  "sanitär",
-  "sanitaer",
-  "sanitärinstallateur",
-  "heizung",
-  "heizungsinstallateur",
-  "heizungsmonteur",
-  "klima",
-  "klimatechniker",
-  "kälte",
-  "kältetechniker",
-  "lüftung",
-  "lüftungsmonteur",
-  "spengler",
-  "bauspengler",
-  "fassadenspengler",
-  "dachdecker",
-  "dachdeckerin",
-  "schreiner",
-  "schreinerei",
-  "tischler",
-  "möbel",
-  "möbelschreiner",
-  "bodenleger",
-  "parkettleger",
-  "plattenleger",
-  "fliesen",
-  "fliesenleger",
-  "estrich",
-  "gärtner",
-  "gaertner",
-  "garten",
-  "landschaftsgärtner",
-  "baumpflege",
-  "gartenbau",
-];
 
 interface NormalizedParams {
   q: string;
@@ -216,19 +53,17 @@ interface NormalizedParams {
 
 interface SourceBundle {
   scrapedJobs: JobListing[];
-  generatedJobs: JobListing[];
   scrapedAt: string | null;
-  fallbackUsed: boolean;
 }
 
 export interface JobSearchResult {
   jobs: JobListing[];
+  opportunities: DirectHireOpportunity[];
   total: number;
   offset: number;
   limit: number;
   facets: JobFacets;
   scrapedAt: string | null;
-  fallbackUsed: boolean;
 }
 
 function normalizeText(value: string): string {
@@ -244,117 +79,58 @@ function parseIsoDateMs(value: string | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function countKeywordHits(text: string, keywords: string[]): number {
-  let hits = 0;
-  for (const keyword of keywords) {
-    if (text.includes(keyword)) {
-      hits += 1;
-    }
-  }
-  return hits;
-}
-
 function scoreScrapedJob(job: ScrapedJob): number {
-  const title = normalizeText(job.title);
-  const requirements = Array.isArray(job.requirements) ? job.requirements : [];
-  const responsibilities = Array.isArray(job.responsibilities) ? job.responsibilities : [];
-  const body = normalizeText(
-    `${job.description} ${job.fullDescription} ${requirements.join(" ")} ${responsibilities.join(" ")}`
-  );
-
-  const titleTradeIdentityHits = countKeywordHits(title, TRADE_IDENTITY_KEYWORDS);
-  const titleOtherTradeHits = countKeywordHits(title, OTHER_TRADE_KEYWORDS);
-  const titleSignalHits = countKeywordHits(title, CORE_TITLE_KEYWORDS);
-  const hardNegativeTitleHits = countKeywordHits(title, HARD_NEGATIVE_TITLE_KEYWORDS);
-  const bodySignalHits = countKeywordHits(body, POSITIVE_KEYWORDS);
-  const bodyNegativeHits = countKeywordHits(body, NEGATIVE_KEYWORDS);
-
-  // Title mentions another trade but NOT this trade → reject
-  if (titleOtherTradeHits > 0 && titleTradeIdentityHits === 0) {
-    return -100;
-  }
-
-  if (hardNegativeTitleHits > 0 && titleSignalHits === 0) {
-    return -100;
-  }
-
-  if (titleSignalHits === 0 && bodySignalHits < 3) {
-    return -100;
-  }
-
-  if (titleSignalHits === 0 && bodyNegativeHits >= 3) {
-    return -100;
-  }
-
-  let score = titleSignalHits * 10 + bodySignalHits * 2;
-  score -= hardNegativeTitleHits * 8;
-  score -= bodyNegativeHits * 4;
-
-  if (title.includes("efz")) {
-    score += 2;
-  }
-
-  if (titleSignalHits === 0) {
-    score -= 4;
-  }
-
-  return score;
+  return classifyZimmermannTitle(job.title).disposition === "ACCEPT" ? 10 : -100;
 }
 
 function normalizeWorkload(value: string): string {
   return value.replace(/\s+/g, "").trim();
 }
 
-function dedupeSignature(job: Pick<JobListing, "title" | "company" | "location">): string {
-  return `${normalizeText(job.title)}|${normalizeText(job.company)}|${normalizeText(job.location)}`;
+function dedupeSignature(job: Pick<ScrapedJob, "title" | "company" | "location">): string {
+  return normalizeText(job.title) + "|" + normalizeText(job.company) + "|" + normalizeText(job.location);
+}
+
+function toPublicSalary(value: string): string | undefined {
+  const cleaned = cleanJobText(value).trim();
+  if (!cleaned || cleaned.length > 40 || !/\d/.test(cleaned)) {
+    return undefined;
+  }
+
+  return /^[\d\s'’.,\-–—/%]*(?:CHF)?[\d\s'’.,\-–—/%]*$/i.test(cleaned)
+    ? cleaned
+    : undefined;
 }
 
 function toScrapedListing(job: ScrapedJob, relevanceScore: number): JobListing {
-  const cleanedDescription = cleanJobSummary(job.description, job.fullDescription);
-  const cleanedFullDescription = cleanJobText(job.fullDescription);
-  const cleanedResponsibilities = cleanJobList(job.responsibilities ?? [], job.fullDescription);
-  const cleanedRequirements = cleanJobList(job.requirements ?? [], job.fullDescription);
-  const cleanedBenefits = cleanJobList(job.benefits ?? [], job.fullDescription);
+  const location = cleanJobText(job.location) || "Schweiz";
+  const type = cleanJobText(job.type);
+  const workload = cleanJobText(job.workload);
+  const publicCopy = buildPublicJobCopy({
+    title: job.title,
+    company: job.company,
+    location,
+    type,
+    workload,
+  });
 
-  return {
+  return serializePublicJob({
     id: String(job.id),
-    title: cleanJobText(job.title),
-    company: cleanJobText(job.company),
-    location: cleanJobText(job.location),
-    type: job.type || "Festanstellung",
-    workload: job.workload || "80-100%",
-    description: cleanedDescription || cleanJobText(job.description),
-    fullDescription: cleanedFullDescription,
-    responsibilities: cleanedResponsibilities,
-    requirements: cleanedRequirements,
-    benefits: cleanedBenefits,
+    title: publicCopy.title,
+    location: publicCopy.location,
+    type: publicCopy.type,
+    workload: publicCopy.workload,
+    description: publicCopy.description,
+    responsibilities: publicCopy.responsibilities,
+    requirements: publicCopy.requirements,
+    benefits: publicCopy.benefits,
     datePosted: job.datePosted,
     isNew: Boolean(job.isNew),
     isUrgent: Boolean(job.isUrgent),
-    source: "scraped",
-    salary: cleanJobText(job.salary) || undefined,
-    jobUrl: job.jobUrl || undefined,
+    salary: toPublicSalary(job.salary),
     isRemote: typeof job.isRemote === "boolean" ? job.isRemote : undefined,
-    companyUrl: job.companyUrl || undefined,
-    scrapedSource: job.source || undefined,
     relevanceScore,
-  };
-}
-
-function toGeneratedListing(job: GeneratedJob): JobListing {
-  return {
-    ...job,
-    source: "generated",
-    relevanceScore: 1,
-  };
-}
-
-function toMockListing(job: Job): JobListing {
-  return {
-    ...job,
-    source: "mock",
-    relevanceScore: 1,
-  };
+  });
 }
 
 let cachedCurated: JobListing[] | null = null;
@@ -373,10 +149,10 @@ async function buildCuratedScrapedListings(): Promise<JobListing[]> {
     }
 
     const listing = toScrapedListing(job, relevanceScore);
+    const signature = dedupeSignature(job);
     if (!listing.description || !listing.description.trim()) {
       continue;
     }
-    const signature = dedupeSignature(listing);
     const existing = deduped.get(signature);
 
     if (!existing) {
@@ -415,12 +191,30 @@ function matchesQuery(job: JobListing, query: string): boolean {
     return true;
   }
 
-  const normalizedQuery = normalizeText(query);
-  return (
-    normalizeText(job.title).includes(normalizedQuery) ||
-    normalizeText(job.company).includes(normalizedQuery) ||
-    normalizeText(job.description).includes(normalizedQuery)
-  );
+  const tokenize = (value: string) =>
+    value
+      .toLocaleLowerCase("de-CH")
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .split(" ")
+      .filter((token) => token.length >= 2);
+  const ignoredQueryTokens = new Set(["efz", "job", "jobs", "stelle", "stellen", "spezialist"]);
+  const queryTokens = tokenize(query).filter((token) => !ignoredQueryTokens.has(token));
+  const publicTokens = tokenize(`${job.title} ${job.description}`);
+
+  const hasPublicMatch = (queryToken: string) => {
+    if (queryToken === "zimmermann" || queryToken === "zimmerin") {
+      return true;
+    }
+
+    return publicTokens.some(
+      (publicToken) =>
+        publicToken === queryToken ||
+        (queryToken.length >= 5 &&
+          (publicToken.startsWith(queryToken) || queryToken.startsWith(publicToken)))
+    );
+  };
+
+  return queryTokens.length > 0 && queryTokens.every(hasPublicMatch);
 }
 
 function matchesLocation(job: JobListing, location: string): boolean {
@@ -524,10 +318,10 @@ function buildFacets(jobs: JobListing[]): JobFacets {
     const type = job.type.trim();
     const workload = normalizeWorkload(job.workload);
 
-    if (type) {
+    if (type && type !== NOT_PROVIDED) {
       typeCounts.set(type, (typeCounts.get(type) ?? 0) + 1);
     }
-    if (workload) {
+    if (workload && workload !== normalizeWorkload(NOT_PROVIDED)) {
       workloadCounts.set(workload, (workloadCounts.get(workload) ?? 0) + 1);
     }
 
@@ -616,58 +410,16 @@ function normalizeSearchParams(params: JobSearchParams): NormalizedParams {
   };
 }
 
-async function getSourceJobs(query: string, location: string): Promise<SourceBundle> {
+async function getSourceJobs(): Promise<SourceBundle> {
   const [meta, curatedScraped] = await Promise.all([
     getScrapedMeta(),
     buildCuratedScrapedListings(),
   ]);
-  const scrapedAt = meta?.scrapedAt ?? null;
-
-  // Always generate supplemental jobs so every search returns results
-  const context = normalizeSearchInput(
-    query || "Zimmermann",
-    location || "Schweiz"
-  );
-  const generated = generateFakeJobs({
-    query: context.query,
-    location: context.location,
-    count: FALLBACK_GENERATED_COUNT,
-  }).map(toGeneratedListing);
-
-  if (curatedScraped.length > 0) {
-    // Real scraped jobs first, generated ones fill gaps
-    const dedupeKeys = new Set(curatedScraped.map(dedupeSignature));
-    const uniqueGenerated = generated.filter(
-      (g) => !dedupeKeys.has(dedupeSignature(g))
-    );
-
-    return {
-      scrapedJobs: curatedScraped,
-      generatedJobs: uniqueGenerated,
-      scrapedAt,
-      fallbackUsed: false,
-    };
-  }
-
   return {
-    scrapedJobs: [],
-    generatedJobs: generated,
-    scrapedAt,
-    fallbackUsed: true,
+    scrapedJobs: curatedScraped,
+    scrapedAt: meta?.scrapedAt ?? null,
   };
 }
-
-function withoutLongDescription(job: JobListing): JobListing {
-  if (!job.fullDescription) {
-    return job;
-  }
-
-  const clone = { ...job };
-  delete clone.fullDescription;
-  return clone;
-}
-
-const MIN_RESULTS_BEFORE_FALLBACK = 3;
 
 function applySecondaryFilters(
   jobs: JobListing[],
@@ -684,94 +436,41 @@ function applySecondaryFilters(
 
 export async function searchJobListings(params: JobSearchParams): Promise<JobSearchResult> {
   const normalized = normalizeSearchParams(params);
-  const sourceBundle = await getSourceJobs(normalized.q, normalized.loc);
+  const sourceBundle = await getSourceJobs();
   const originCoordinate =
     normalized.loc && normalized.radiusKm ? getCachedCoordinate(normalized.loc) : null;
 
-  // --- Phase 1: exact query + location ---
-  let baseScopedScraped = sourceBundle.scrapedJobs.filter(
+  const scopedJobs = sourceBundle.scrapedJobs.filter(
     (job) =>
       matchesQuery(job, normalized.q) &&
       matchesLocationWithRadius(job, normalized.loc, normalized.radiusKm, originCoordinate)
   );
-  let baseScopedGenerated = sourceBundle.generatedJobs.filter(
-    (job) =>
-      matchesQuery(job, normalized.q) &&
-      matchesLocationWithRadius(job, normalized.loc, normalized.radiusKm, originCoordinate)
-  );
-
-  let filteredScraped = applySecondaryFilters(baseScopedScraped, normalized);
-  let filteredGenerated = applySecondaryFilters(baseScopedGenerated, normalized);
-  let fallbackUsed = sourceBundle.fallbackUsed;
-
-  // --- Phase 2: if too few results and location was set, drop location filter ---
-  if (
-    filteredScraped.length + filteredGenerated.length < MIN_RESULTS_BEFORE_FALLBACK &&
-    normalized.loc
-  ) {
-    baseScopedScraped = sourceBundle.scrapedJobs.filter((job) => matchesQuery(job, normalized.q));
-    baseScopedGenerated = sourceBundle.generatedJobs.filter((job) => matchesQuery(job, normalized.q));
-    filteredScraped = applySecondaryFilters(baseScopedScraped, normalized);
-    filteredGenerated = applySecondaryFilters(baseScopedGenerated, normalized);
-    fallbackUsed = true;
-  }
-
-  // --- Phase 3: if STILL too few (e.g. obscure query), drop query filter too ---
-  if (filteredScraped.length + filteredGenerated.length < MIN_RESULTS_BEFORE_FALLBACK) {
-    baseScopedScraped = sourceBundle.scrapedJobs;
-    baseScopedGenerated = sourceBundle.generatedJobs;
-    filteredScraped = applySecondaryFilters(baseScopedScraped, normalized);
-    filteredGenerated = applySecondaryFilters(baseScopedGenerated, normalized);
-    fallbackUsed = true;
-  }
-
-  // --- Phase 4: if secondary filters killed everything, drop them too ---
-  if (filteredScraped.length + filteredGenerated.length < MIN_RESULTS_BEFORE_FALLBACK) {
-    filteredScraped = baseScopedScraped;
-    filteredGenerated = baseScopedGenerated;
-    fallbackUsed = true;
-  }
-
-  const includeGenerated = filteredScraped.length < MIN_REAL_RESULTS_FOR_SCRAPED_ONLY;
-  const facets = buildFacets(
-    includeGenerated ? [...baseScopedScraped, ...baseScopedGenerated] : baseScopedScraped
-  );
-
-  const sortedScraped = sortJobs(filteredScraped, normalized.sort);
-  const sortedGenerated = sortJobs(filteredGenerated, normalized.sort);
-  const combined = includeGenerated ? [...sortedScraped, ...sortedGenerated] : sortedScraped;
-
-  const total = combined.length;
-  const paged = combined
-    .slice(normalized.offset, normalized.offset + normalized.limit)
-    .map(withoutLongDescription);
+  const filteredJobs = applySecondaryFilters(scopedJobs, normalized);
+  const facets = buildFacets(scopedJobs);
+  const sortedJobs = sortJobs(filteredJobs, normalized.sort);
+  const total = sortedJobs.length;
+  const paged = sortedJobs.slice(normalized.offset, normalized.offset + normalized.limit);
+  const opportunities = buildDirectHireOpportunities({
+    visibleRealRows: paged.length,
+    offset: normalized.offset,
+    preferences: {
+      q: normalized.q,
+      loc: normalized.loc,
+      type: normalized.type,
+      workload: normalized.workload,
+      remote: normalized.remote,
+    },
+  });
 
   return {
     jobs: paged,
+    opportunities,
     total,
     offset: normalized.offset,
     limit: normalized.limit,
     facets,
     scrapedAt: sourceBundle.scrapedAt,
-    fallbackUsed,
   };
-}
-
-function normalizeGeneratedFromId(
-  id: string,
-  context: { query?: string; location?: string }
-): JobListing | null {
-  const generated = generateFakeJobById({
-    id,
-    query: context.query ?? "",
-    location: context.location ?? "",
-  });
-
-  if (!generated) {
-    return null;
-  }
-
-  return toGeneratedListing(generated);
 }
 
 async function normalizeScrapedById(id: string): Promise<JobListing | null> {
@@ -788,36 +487,14 @@ async function normalizeScrapedById(id: string): Promise<JobListing | null> {
   return toScrapedListing(scraped, relevanceScore);
 }
 
-function normalizeMockById(id: string): JobListing | null {
-  const mock = mockJobs.find((job) => job.id === id);
-  return mock ? toMockListing(mock) : null;
-}
-
 export async function getJobListingById(input: {
   id: string;
-  query?: string;
-  location?: string;
 }): Promise<JobListing | null> {
-  if (input.id.startsWith("gen-")) {
-    return normalizeGeneratedFromId(input.id, {
-      query: input.query,
-      location: input.location,
-    });
+  if (!isValidZimmermannJobId(input.id)) {
+    return null;
   }
 
-  // Direct lookup handles legacy `scraped-<trade>-<hex>` IDs and mock IDs.
-  const direct = (await normalizeScrapedById(input.id)) ?? normalizeMockById(input.id);
-  if (direct) {
-    return direct;
-  }
-
-  // New slug `<role>-<city>-<12hex>`: extract trailing hex, reconstruct legacy ID.
-  const reconstructedId = reconstructScrapedIdFromSlug(input.id);
-  if (reconstructedId && reconstructedId !== input.id) {
-    return await normalizeScrapedById(reconstructedId);
-  }
-
-  return null;
+  return normalizeScrapedById(input.id);
 }
 
 function overlapScore(a: string, b: string): number {
@@ -843,20 +520,7 @@ function overlapScore(a: string, b: string): number {
 }
 
 export async function getSimilarJobListings(current: JobListing, limit = 4): Promise<JobListing[]> {
-  let candidates: JobListing[] = [];
-
-  if (current.source === "scraped") {
-    candidates = await buildCuratedScrapedListings();
-  } else if (current.source === "generated") {
-    const context: SearchContext = current.searchContext ?? normalizeSearchInput(current.title, current.location);
-    candidates = generateFakeJobs({
-      query: context.query,
-      location: context.location,
-      count: 18,
-    }).map(toGeneratedListing);
-  } else {
-    candidates = mockJobs.map(toMockListing);
-  }
+  const candidates = await buildCuratedScrapedListings();
 
   return candidates
     .filter((candidate) => candidate.id !== current.id)
@@ -865,9 +529,6 @@ export async function getSimilarJobListings(current: JobListing, limit = 4): Pro
 
       if (normalizeText(candidate.location) === normalizeText(current.location)) {
         score += 3;
-      }
-      if (normalizeText(candidate.company) === normalizeText(current.company)) {
-        score += 1;
       }
       if (normalizeText(candidate.type) === normalizeText(current.type)) {
         score += 1;
@@ -882,15 +543,10 @@ export async function getSimilarJobListings(current: JobListing, limit = 4): Pro
       return parseIsoDateMs(b.candidate.datePosted) - parseIsoDateMs(a.candidate.datePosted);
     })
     .slice(0, limit)
-    .map(({ candidate }) => withoutLongDescription(candidate));
+    .map(({ candidate }) => candidate);
 }
 
 export async function getIndexableJobListings(limit = 400): Promise<JobListing[]> {
   const curatedScraped = await buildCuratedScrapedListings();
-
-  if (curatedScraped.length > 0) {
-    return sortJobs(curatedScraped, "newest").slice(0, limit).map(withoutLongDescription);
-  }
-
-  return mockJobs.map(toMockListing).slice(0, limit);
+  return sortJobs(curatedScraped, "newest").slice(0, limit);
 }

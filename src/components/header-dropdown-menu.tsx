@@ -51,7 +51,7 @@ export function HeaderDropdownMenu({
         className="text-sm px-2 sm:px-4 btn-interactive"
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        aria-controls={menuId}
+        aria-controls={isOpen ? menuId : undefined}
         onClick={() => setIsOpen((prev) => !prev)}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
@@ -73,10 +73,10 @@ export function HeaderDropdownMenu({
         role="menu"
         aria-label={label}
         className={cn(
-          "search-dropdown absolute right-0 top-[calc(100%+8px)] z-50 min-w-56 overflow-hidden rounded-xl border bg-white py-1 shadow-lg",
+          "search-dropdown absolute right-0 top-[calc(100%+8px)] z-50 min-w-56 overflow-hidden rounded-xl border bg-white py-1 shadow-lg transition-transform duration-150",
           isOpen
-            ? "search-dropdown-open"
-            : "search-dropdown-closed pointer-events-none"
+            ? "visible translate-y-0 opacity-100"
+            : "invisible -translate-y-2 opacity-0 pointer-events-none"
         )}
         onKeyDown={(event) => {
           if (event.key === "Escape") {

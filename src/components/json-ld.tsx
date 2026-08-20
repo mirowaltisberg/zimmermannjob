@@ -2,6 +2,8 @@
 // Renders a <script type="application/ld+json"> tag with validated JSON.
 // Used across layout, job detail, and landing pages.
 
+import { assertNoForbiddenPublicFields } from "@/lib/public-job-boundary";
+
 interface JsonLdProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>;
@@ -12,6 +14,7 @@ interface JsonLdProps {
  * Server component — works in both server and client contexts.
  */
 export function JsonLd({ data }: JsonLdProps) {
+  assertNoForbiddenPublicFields(data, "JSON-LD");
   return (
     <script
       type="application/ld+json"

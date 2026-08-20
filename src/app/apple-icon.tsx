@@ -1,8 +1,5 @@
 import { ImageResponse } from "next/og";
 
-// SEO-DECISION: Apple Touch Icon generated from code to match the brand hammer.
-// This satisfies the Seobility "missing apple-touch-icon" warning.
-
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
@@ -16,18 +13,18 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#8B5E3C",
+          background: "#29221d",
           borderRadius: "36px",
         }}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 180 180"
+          viewBox="0 0 48 48"
           width="120"
           height="120"
         >
-          <path d="M50 35h80v30H50z" fill="white" rx="4"/>
-          <path d="M78 65h24v75h-24z" fill="white" opacity="0.9" rx="4"/>
+          <path d="M6 36V7h30v29M6 7l30 29M36 7L6 36M12 36V19h18v17M12 25h18" fill="none" stroke="#d7823b" strokeWidth="4" />
+          <path d="M6 7h30" fill="none" stroke="#7c993e" strokeWidth="3" />
         </svg>
       </div>
     ),

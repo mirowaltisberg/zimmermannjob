@@ -1,0 +1,9 @@
+{
+  "cases": [
+    { "offsetDays": 0, "expectedError": null },
+    { "offsetDays": -35, "expectedError": null },
+    { "offsetDays": -36, "expectedError": "stale-date" },
+    { "offsetDays": 1, "expectedError": null },
+    { "offsetDays": 2, "expectedError": "future-date" }
+  ]
+}

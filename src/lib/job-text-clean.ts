@@ -63,6 +63,7 @@ function isNoiseLine(line: string): boolean {
 
 function fixEncodedUmlauts(text: string): string {
   return text
+    .replace(/\u00df/g, "ss")
     .replace(/\bfuer\b/gi, (m) => m[0] === "F" ? "Für" : "für")
     .replace(/\bueber\b/gi, (m) => m[0] === "U" ? "Über" : "über")
     .replace(/\bLoes/g, "Lös")

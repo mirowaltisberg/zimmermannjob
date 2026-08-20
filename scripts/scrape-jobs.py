@@ -1,25 +1,23 @@
-"""
-Scrape Swiss carpentry (Zimmermann/Holzbau) jobs using python-jobspy and output JSON.
-Usage: python scrape-jobs.py [--query "search term"] [--location "city"] [--results 50]
-Output is written to ../src/data/scraped-jobs.json
+"""Scrape a fresh chunk of genuine Swiss Zimmermann and timber jobs into JSON.
+
+This command is deliberately storage-only: it never connects to Supabase. CI
+runs several isolated chunks in parallel and a separate publisher validates,
+merges and publishes the complete snapshot exactly once.
 """
 
 import json
-import sys
 import os
 import re
 import math
 import hashlib
 import argparse
-from datetime import datetime
+import logging
+import multiprocessing
+import queue
+from datetime import datetime, timezone
 
 from jobspy import scrape_jobs
-
-try:
-    from supabase import create_client as create_supabase_client
-    HAS_SUPABASE = True
-except ImportError:
-    HAS_SUPABASE = False
+from job_safety import CONFIG as JOB_SAFETY_CONFIG, classify_zimmermann_title
 
 
 def safe_str(val) -> str:
@@ -41,6 +39,16 @@ def safe_num(val):
         return float(val)
     except (ValueError, TypeError):
         return None
+
+
+def safe_bool(val) -> bool | None:
+    """Accept only real boolean values; strings and numbers are ambiguous."""
+    if isinstance(val, bool):
+        return val
+    value_type = type(val)
+    if value_type.__module__.startswith("numpy") and value_type.__name__ == "bool_":
+        return bool(val)
+    return None
 
 
 # Map canton abbreviations to full names
@@ -206,132 +214,6 @@ def clean_description(description: str) -> str:
 
 # ── Relevance filter ──────────────────────────────────────────────────────────
 
-# Title must contain at least one of these (case-insensitive) to be kept
-RELEVANT_TITLE_KEYWORDS = [
-    "zimmermann",
-    "zimmerfrau",
-    "zimmerleute",
-    "zimmerei",
-    "holzbau",
-    "holzbauer",
-    "holzkonstruktion",
-    "abbund",
-    "abbundanlage",
-    "dachstuhl",
-    "dachkonstruktion",
-    "blockbau",
-    "blockhaus",
-    "fachwerk",
-    "fachwerkbau",
-    "carport",
-    "pergola",
-    "holzrahmenbau",
-    "elementbau",
-    "holz",
-    "massivholz",
-    "brettschichtholz",
-    "leimholz",
-    "schnittholz",
-    "polier",
-    "vorarbeiter",
-    "zimmerpolier",
-    "bauleiter",
-    "projektleiter",
-    "planer",
-    "monteur",
-    "montage",
-    "techniker",
-    "fachmann",
-    "fachfrau",
-    "fachperson",
-    "werkstatt",
-    "produktion",
-    "dachdecker",
-    "dach",
-    "treppe",
-    "treppenbau",
-    "handwerker",
-    "schrein",
-    "tischler",
-    "isolier",
-    "dämm",
-    "cnc",
-    "maschinenführer",
-    "holzhaus",
-    "holztechni",
-    "gebäudehülle",
-    "sanierung",
-    "renovation",
-    "umbau",
-]
-
-# Titles containing any of these are always rejected
-REJECT_TITLE_KEYWORDS = [
-    "software",
-    "developer",
-    "frontend",
-    "backend",
-    "fullstack",
-    "full-stack",
-    "devops",
-    "data scientist",
-    "data engineer",
-    "machine learning",
-    "research scientist",
-    "research engineer",
-    "ux ",
-    "ui ",
-    "product manager",
-    "product owner",
-    "scrum",
-    "marketing",
-    "sales",
-    "vertrieb",
-    "verkauf",
-    "buchhalt",
-    "finanz",
-    "accounting",
-    "controller",
-    "jurist",
-    "rechts",
-    "legal",
-    "koch",
-    "küche",
-    "gastro",
-    "pflege",
-    "arzt",
-    "ärzt",
-    "lehrer",
-    "dozent",
-    "professor",
-    "nvidia",
-    "intern -",
-    "internship",
-    "new grad",
-    "cloud ",
-    "kubernetes",
-    "azure",
-    "aws ",
-    "abacus",
-    "sap ",
-    "erp ",
-    "automobilverkäufer",
-    "automobilmechatroniker",
-    "computational",
-    "validation engineer",
-    "application manager",
-    "reliability engineer",
-    "elektroinstallat",
-    "elektroplan",
-]
-
-# French / Italian title markers → reject (site is German-language)
-NON_GERMAN_MARKERS = [
-    "ingénieur", "technicien", "alternance", "responsable", "chargé",
-    "électricien", "confirmé", "h/f", " cdi ", " cdd ",
-    "elettricista", "disegnatore", "praticante", "tecnico ",
-]
-
 # Swiss location whitelist — location must contain one of these to be kept
 SWISS_LOCATION_MARKERS = [
     # Country
@@ -393,7 +275,7 @@ def is_swiss_location(location: str) -> bool:
 
 
 def is_relevant_job(job: dict) -> bool:
-    """Return True if the job belongs on a Swiss electrical jobs site."""
+    """Return True only for clearly timber-construction-related Swiss roles."""
     title = job.get("title", "").lower()
     location = job.get("location", "").lower()
 
@@ -401,61 +283,33 @@ def is_relevant_job(job: dict) -> bool:
     if not is_swiss_location(location):
         return False
 
-    # 2) Reject non-German language titles
-    if any(marker in title for marker in NON_GERMAN_MARKERS):
-        return False
-
-    # 3) Reject clearly irrelevant titles
-    if any(kw in title for kw in REJECT_TITLE_KEYWORDS):
-        return False
-
-    # 4) Must have at least one relevant keyword in title
-    if any(kw in title for kw in RELEVANT_TITLE_KEYWORDS):
-        return True
-
-    # 5) If title doesn't match, reject
-    return False
+    # Public publication is deny-first: REVIEW is kept out together with REJECT.
+    return classify_zimmermann_title(title)["disposition"] == "ACCEPT"
 
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "data")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "scraped-jobs.json")
 
-TRADE = "zimmermann"
+TRADE = JOB_SAFETY_CONFIG["trade"]
+DEFAULT_MAX_AGE_DAYS = 35
+DEFAULT_COMBO_TIMEOUT_SECONDS = 180
 
 DEFAULT_SEARCH_TERMS = [
-    "Zimmermann",
-    "Zimmerfrau",
-    "Holzbau",
     "Zimmermann EFZ",
-    "Holzbauer",
-    "Holzkonstruktion",
-    "Zimmerpolier",
-    "Abbund",
-    "Dachstuhl",
+    "Zimmerin EFZ",
+    "Holzbau-Fachmann",
+    "Holzbau-Fachfrau",
+    "Holzbaupolier",
     "Holzbautechniker",
-    "Zimmerei",
-    "Holzbaumonteur",
-    "Vorarbeiter Holzbau",
-    "Holzbau Projektleiter",
-    "Blockbau",
-    "Dachdecker",
-    "Schreiner",
-    "Holzbau Monteur",
-    "Elementbau Holz",
-    "Holzrahmenbau",
-    "Fachwerk",
-    "Treppenbauer",
-    "Holztechniker",
+    "Projektleiter Holzbau",
     "Bauleiter Holzbau",
-    "CNC Holz",
-    "Maschinenführer Holz",
-    "Holzbearbeitung",
-    "Werkstatt Zimmerei",
-    "Holzbau Ingenieur",
-    "Carport Monteur",
-    "Pergola Bau",
-    "Holzhaus",
-    "Gebäudehülle Holz",
+    "Vorarbeiter Holzbau",
+    "Konstrukteur Holzbau",
+    "AVOR Holzbau",
+    "Holzbau Montage",
+    "Elementbauer Holzbau",
+    "Abbinder Holzbau",
+    "Holzrahmenbau Zimmerei",
 ]
 
 DEFAULT_LOCATIONS = [
@@ -482,31 +336,81 @@ DEFAULT_LOCATIONS = [
 ]
 
 
-def scrape_swiss_jobs(query: str, location: str, results_wanted: int = 50) -> list[dict]:
+def _scrape_jobs_worker(result_queue, scrape_kwargs: dict) -> None:
+    """Run JobSpy outside the coordinator process so hung site threads are killable."""
+    # JobSpy can log complete search URLs (including location/query) on upstream
+    # errors even with verbose=0. Keep worker logs aggregate-only; structured
+    # status still returns to the coordinator through result_queue.
+    logging.disable(logging.CRITICAL)
+    try:
+        jobs_df = scrape_jobs(**scrape_kwargs)
+        records = [] if jobs_df is None or jobs_df.empty else jobs_df.to_dict(orient="records")
+        result_queue.put(("ok", records))
+    except Exception as exc:
+        result_queue.put(("error", type(exc).__name__))
+
+
+def scrape_swiss_jobs(
+    query: str,
+    location: str,
+    results_wanted: int = 50,
+    max_age_days: int = DEFAULT_MAX_AGE_DAYS,
+    combo_timeout_seconds: int = DEFAULT_COMBO_TIMEOUT_SECONDS,
+) -> list[dict]:
     """Scrape jobs from Indeed for a given query + location."""
-    print(f"  Scraping: '{query}' in '{location}' (max {results_wanted})...")
+    # Keep CI logs aggregate-only. Titles, employers and source URLs can contain
+    # identifying information and must stay inside the short-lived artifact.
+    print(f"  Scraping one query/location pair (max {results_wanted})...")
+
+    context = multiprocessing.get_context("spawn")
+    result_queue = context.Queue(maxsize=1)
+    process = context.Process(
+        target=_scrape_jobs_worker,
+        args=(
+            result_queue,
+            {
+                "site_name": ["indeed", "google", "linkedin"],
+                "search_term": query,
+                "location": location,
+                "results_wanted": results_wanted,
+                "hours_old": max_age_days * 24,
+                "country_indeed": "Switzerland",
+                "verbose": 0,
+            },
+        ),
+    )
+    process.start()
 
     try:
-        jobs_df = scrape_jobs(
-            site_name=["indeed", "google", "linkedin"],
-            search_term=query,
-            location=location,
-            results_wanted=results_wanted,
-            hours_old=720,  # last 30 days
-            country_indeed="Switzerland",
-            verbose=0,
-        )
-
-        if jobs_df is None or jobs_df.empty:
-            print(f"    No results found.")
-            return []
-
-        print(f"    Found {len(jobs_df)} jobs.")
-        return jobs_df.to_dict(orient="records")
-
-    except Exception as e:
-        print(f"    Error: {e}")
+        status, payload = result_queue.get(timeout=combo_timeout_seconds)
+    except queue.Empty:
+        print(f"    Scraper request timed out after {combo_timeout_seconds}s.")
+        process.terminate()
+        process.join(timeout=10)
         return []
+    except KeyboardInterrupt:
+        process.terminate()
+        process.join(timeout=10)
+        raise
+    finally:
+        result_queue.close()
+
+    process.join(timeout=10)
+    if process.is_alive():
+        process.terminate()
+        process.join(timeout=10)
+
+    if status != "ok":
+        print(f"    Scraper request failed: {payload}")
+        return []
+
+    records = payload
+    if not records:
+        print("    No results found.")
+        return []
+
+    print(f"    Found {len(records)} jobs.")
+    return records
 
 
 def normalize_job(raw: dict, idx: int) -> dict | None:
@@ -515,7 +419,7 @@ def normalize_job(raw: dict, idx: int) -> dict | None:
     company = safe_str(raw.get("company"))
     job_url = safe_str(raw.get("job_url"))
 
-    if not title or not job_url:
+    if not title or not re.match(r"^https?://", job_url, re.IGNORECASE):
         return None
 
     # Location — Indeed returns "City, Canton, CH" in the `location` field
@@ -535,7 +439,7 @@ def normalize_job(raw: dict, idx: int) -> dict | None:
         "internship": "Praktikum",
     }
     # Handle comma-separated types: pick the first recognized one
-    job_type_display = "Vollzeit"
+    job_type_display = ""
     for t in job_type.lower().split(","):
         t = t.strip()
         if t in type_map:
@@ -543,9 +447,7 @@ def normalize_job(raw: dict, idx: int) -> dict | None:
             break
 
     # Try to extract workload from description
-    workload = extract_workload(description)
-    if not workload:
-        workload = "100%" if job_type_display == "Vollzeit" else "60-100%"
+    workload = extract_workload(description) or ""
 
     # Extract structured sections from description
     sections = extract_sections(description)
@@ -562,34 +464,38 @@ def normalize_job(raw: dict, idx: int) -> dict | None:
                 date_str = s[:10] if s else ""
         except Exception:
             pass
+    # An undated listing cannot satisfy the freshness guarantee. Do not invent a
+    # publication date, because that would make an old listing look current.
     if not date_str:
-        date_str = datetime.now().strftime("%Y-%m-%d")
+        return None
 
-    # Check if recent (within 3 days)
     try:
-        days_old = (datetime.now() - datetime.strptime(date_str, "%Y-%m-%d")).days
-    except Exception:
-        days_old = 99
+        posted_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+    days_old = (datetime.now(timezone.utc).date() - posted_date).days
+    if days_old < -1:
+        return None
 
     # Salary
     salary_min = safe_num(raw.get("min_amount"))
     salary_max = safe_num(raw.get("max_amount"))
-    salary_currency = safe_str(raw.get("currency")) or "CHF"
-    salary_str = ""
-    if salary_min and salary_max:
+    salary_currency = safe_str(raw.get("currency")) or None
+    salary_str = None
+    if salary_currency and salary_min and salary_max:
         salary_str = f"{salary_currency} {int(salary_min):,} - {int(salary_max):,}"
-    elif salary_min:
+    elif salary_currency and salary_min:
         salary_str = f"ab {salary_currency} {int(salary_min):,}"
 
-    # is_remote can also be NaN
-    is_remote_val = raw.get("is_remote")
-    is_remote = bool(is_remote_val) if is_remote_val is not None and not (isinstance(is_remote_val, float) and math.isnan(is_remote_val)) else False
+    is_remote = safe_bool(raw.get("is_remote"))
 
     # Stable ID from job URL so dedup works across runs
     url_hash = hashlib.md5(job_url.encode()).hexdigest()[:12]
-    stable_id = f"scraped-zimmermann-{url_hash}"
+    stable_id = f"scraped-{TRADE}-{url_hash}"
 
     return {
+        "trade": TRADE,
         "id": stable_id,
         "title": title,
         "company": company,
@@ -612,83 +518,14 @@ def normalize_job(raw: dict, idx: int) -> dict | None:
     }
 
 
-def sync_to_supabase(normalized: list[dict], scraped_at: str):
-    """Upsert all normalized jobs into Supabase."""
-    url = os.environ.get("SUPABASE_URL", "") or os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "")
-    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-
-    if not HAS_SUPABASE:
-        print("    ⚠ supabase-py not installed, skipping DB sync")
-        return
-    if not url or not key:
-        print("    ⚠ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set, skipping DB sync")
-        return
-
-    try:
-        sb = create_supabase_client(url, key)
-    except Exception as e:
-        print(f"    ⚠ Supabase client error: {e}")
-        return
-
-    def to_db_row(job: dict) -> dict:
-        return {
-            "id": job["id"],
-            "title": job.get("title", ""),
-            "company": job.get("company", ""),
-            "location": job.get("location", ""),
-            "type": job.get("type", "Vollzeit"),
-            "workload": job.get("workload", "100%"),
-            "description": job.get("description", ""),
-            "full_description": job.get("fullDescription", ""),
-            "responsibilities": job.get("responsibilities", []),
-            "requirements": job.get("requirements", []),
-            "benefits": job.get("benefits", []),
-            "date_posted": job.get("datePosted") or None,
-            "is_new": bool(job.get("isNew")),
-            "is_urgent": bool(job.get("isUrgent")),
-            "salary": job.get("salary", ""),
-            "job_url": job.get("jobUrl", ""),
-            "source": job.get("source", "linkedin"),
-            "is_remote": bool(job.get("isRemote")),
-            "company_url": job.get("companyUrl", ""),
-            "trade": TRADE,
-        }
-
-    BATCH_SIZE = 500
-    inserted = 0
-
-    for i in range(0, len(normalized), BATCH_SIZE):
-        batch = [to_db_row(j) for j in normalized[i : i + BATCH_SIZE]]
-        try:
-            sb.table("jobs").upsert(batch, on_conflict="id").execute()
-            inserted += len(batch)
-        except Exception as e:
-            print(f"    ⚠ Supabase upsert error (batch {i}): {e}")
-            continue
-
-    # Update scrape metadata
-    try:
-        sb.table("scrape_metadata").update({
-            "scraped_at": scraped_at,
-            "total_jobs": len(normalized),
-        }).eq("id", 1).execute()
-    except Exception as e:
-        print(f"    ⚠ Supabase metadata update error: {e}")
-
-    print(f"    ☁ Synced {inserted} jobs to Supabase")
-
-
-def save_results(all_raw: list[dict], label: str = ""):
-    """Normalize all raw jobs, filter for relevance, and write to output file + Supabase."""
+def save_results(all_raw: list[dict], output_file: str, label: str = ""):
+    """Normalize and write one isolated scrape chunk to disk."""
     normalized = []
     filtered_out = 0
     for i, raw in enumerate(all_raw):
-        if raw.get("_already_normalized"):
-            job = dict(raw["_job"])
-        else:
-            job = normalize_job(raw, i)
-            if not job:
-                continue
+        job = normalize_job(raw, i)
+        if not job:
+            continue
 
         if not is_relevant_job(job):
             filtered_out += 1
@@ -698,35 +535,30 @@ def save_results(all_raw: list[dict], label: str = ""):
 
     normalized.sort(key=lambda j: j["datePosted"], reverse=True)
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    output_path = os.path.abspath(output_file)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    scraped_at = datetime.now().isoformat()
+    scraped_at = datetime.now(timezone.utc).isoformat()
     output = {
         "scrapedAt": scraped_at,
         "totalJobs": len(normalized),
         "jobs": normalized,
     }
 
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
 
     if label:
         print(f"    💾 Saved {len(normalized)} jobs ({filtered_out} filtered out) {label}")
-
-    # Sync to Supabase
-    sync_to_supabase(normalized, scraped_at)
 
 
 def print_quality_summary(all_raw: list[dict]):
     """Print data quality stats."""
     normalized = []
     for i, raw in enumerate(all_raw):
-        if raw.get("_already_normalized"):
-            normalized.append(raw["_job"])
-        else:
-            job = normalize_job(raw, i)
-            if job:
-                normalized.append(job)
+        job = normalize_job(raw, i)
+        if job:
+            normalized.append(job)
 
     has_desc = sum(1 for j in normalized if len(j["fullDescription"]) > 50)
     has_location = sum(1 for j in normalized if j["location"] != "Schweiz")
@@ -744,47 +576,38 @@ def print_quality_summary(all_raw: list[dict]):
     print(f"  With salary:          {has_salary}/{len(normalized)}")
 
 
-def load_existing_jobs() -> tuple[list[dict], set[str]]:
-    """Load previously scraped jobs from file so we accumulate across runs."""
-    all_raw: list[dict] = []
-    seen_urls: set[str] = set()
-
-    if os.path.exists(OUTPUT_FILE):
-        try:
-            with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            existing = data.get("jobs", [])
-            for job in existing:
-                url = job.get("jobUrl", "")
-                if url and url not in seen_urls:
-                    seen_urls.add(url)
-                    # Regenerate stable ID from URL
-                    url_hash = hashlib.md5(url.encode()).hexdigest()[:12]
-                    job["id"] = f"scraped-zimmermann-{url_hash}"
-                    # Store as a pseudo-raw record so save_results can re-normalize
-                    all_raw.append({
-                        "_already_normalized": True,
-                        "_job": job,
-                        "job_url": url,
-                    })
-            print(f"Loaded {len(all_raw)} existing jobs from previous run.\n")
-        except Exception as e:
-            print(f"Warning: could not load existing jobs: {e}\n")
-
-    return all_raw, seen_urls
-
-
 def main():
-    parser = argparse.ArgumentParser(description="Scrape Swiss electrical jobs")
+    parser = argparse.ArgumentParser(description="Scrape Swiss Zimmermann jobs")
     parser.add_argument("--query", type=str, help="Single search query")
     parser.add_argument("--location", type=str, help="Single location")
     parser.add_argument("--results", type=int, default=50, help="Results per query/location combo")
     parser.add_argument("--quick", action="store_true", help="Quick mode: single query only")
     parser.add_argument("--chunk", type=int, default=0, help="Chunk index (0-based) for splitting search terms")
     parser.add_argument("--total-chunks", type=int, default=1, help="Total number of chunks to split search terms into")
+    parser.add_argument("--output", default=OUTPUT_FILE, help="JSON output path for this isolated chunk")
+    parser.add_argument(
+        "--max-age-days",
+        type=int,
+        default=DEFAULT_MAX_AGE_DAYS,
+        help="Only request listings published within this many days",
+    )
+    parser.add_argument(
+        "--combo-timeout-seconds",
+        type=int,
+        default=DEFAULT_COMBO_TIMEOUT_SECONDS,
+        help="Terminate one hung query/location scrape after this many seconds",
+    )
     args = parser.parse_args()
 
-    all_raw, seen_urls = load_existing_jobs()
+    if args.total_chunks < 1 or args.chunk < 0 or args.chunk >= args.total_chunks:
+        parser.error("chunk must be in the range 0..total-chunks-1")
+    if args.max_age_days < 1 or args.max_age_days > 90:
+        parser.error("max-age-days must be in the range 1..90")
+    if args.combo_timeout_seconds < 30 or args.combo_timeout_seconds > 600:
+        parser.error("combo-timeout-seconds must be in the range 30..600")
+
+    all_raw: list[dict] = []
+    seen_urls: set[str] = set()
     combo_count = 0
 
     if args.query:
@@ -815,28 +638,31 @@ def main():
     for q in queries:
         for loc in locations:
             combo_count += 1
-            results = scrape_swiss_jobs(q, loc, args.results)
+            results = scrape_swiss_jobs(
+                q,
+                loc,
+                args.results,
+                args.max_age_days,
+                args.combo_timeout_seconds,
+            )
             new_count = 0
             for r in results:
-                url = r.get("job_url", "")
+                url = safe_str(r.get("job_url"))
                 if url and url not in seen_urls:
                     seen_urls.add(url)
                     all_raw.append(r)
                     new_count += 1
-                    title = safe_str(r.get("title"))
-                    company = safe_str(r.get("company"))
-                    location = parse_location(safe_str(r.get("location")))
-                    print(f"    ✓ {title} — {company} ({location})")
             dupe_count = len(results) - new_count
+            print(f"    Accepted {new_count} new records.")
             if dupe_count > 0:
                 print(f"    ({dupe_count} duplicates skipped)")
             print(f"    → [{combo_count}/{total_combos}] {len(all_raw)} unique jobs\n")
 
             # Save after every query/location combo so progress is never lost
-            save_results(all_raw, f"(combo {combo_count}/{total_combos})")
+            save_results(all_raw, args.output, f"(combo {combo_count}/{total_combos})")
 
     print(f"\nDone! Total unique raw jobs: {len(all_raw)}")
-    save_results(all_raw, "(final)")
+    save_results(all_raw, args.output, "(final)")
     print_quality_summary(all_raw)
 
 

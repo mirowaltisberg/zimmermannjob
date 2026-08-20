@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { SiteFooter } from "@/components/site-footer";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.zimmermannjob.ch";
+import { SiteBrand } from "@/components/site-brand";
 
 export const metadata: Metadata = {
-  title: "Über die Redaktion | zimmermannjob.ch",
+  title: "Über die Redaktion",
   description:
-    "Wer hinter den redaktionellen Inhalten von zimmermannjob.ch steht: Recherche, Quellen, Methodik und unser Anspruch an Schweizer Lohn- und Branchendaten.",
+    "Quellen, Methodik und Grenzen der redaktionellen Inhalte auf zimmermannjob.ch.",
   alternates: {
     canonical: "/team",
     languages: { "de-CH": "/team" },
@@ -18,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Über die Redaktion | zimmermannjob.ch",
     description:
-      "Wer hinter den redaktionellen Inhalten von zimmermannjob.ch steht: Recherche, Quellen, Methodik und unser Anspruch an Schweizer Lohn- und Branchendaten.",
+      "Quellen, Methodik und Grenzen der redaktionellen Inhalte auf zimmermannjob.ch.",
     url: "/team",
     type: "website",
     siteName: "zimmermannjob.ch",
@@ -29,17 +27,10 @@ export const metadata: Metadata = {
 export default function TeamPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="border-b header-blur sticky top-0 z-30">
-        <div className="container mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+      <header className="trade-header border-b sticky top-0 z-30">
+        <div className="container mx-auto px-4 sm:px-6 h-16 sm:h-[4.5rem] flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center shrink-0">
-            <Image
-              src="/logo.svg"
-              alt="zimmermannjob.ch — Zimmermannjobs in der Schweiz"
-              width={142}
-              height={29}
-              className="h-7 sm:h-8 w-auto"
-              priority
-            />
+            <SiteBrand />
           </Link>
           <nav className="shrink-0">
             <Button
@@ -53,7 +44,7 @@ export default function TeamPage() {
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-3xl">
+      <main id="main-content" className="flex-1 container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-3xl">
         <Breadcrumbs
           items={[
             { label: "Startseite", href: "/" },
@@ -66,8 +57,8 @@ export default function TeamPage() {
           Über die Redaktion
         </h1>
         <p className="text-slate-600 mt-3 text-base sm:text-lg leading-relaxed">
-          Die Redaktion von zimmermannjob.ch erstellt redaktionelle Inhalte zu Berufen,
-          Löhnen und regionalen Arbeitsmärkten in der Schweizer Holzbau- und Zimmerei-Branche.
+          zimmermannjob.ch ergänzt die Stellensuche mit kurzen Informationen zum
+          Zimmermannberuf, zur Ausbildung und zur Einordnung von Lohnangaben.
         </p>
 
         <section className="mt-10 space-y-6">
@@ -76,13 +67,11 @@ export default function TeamPage() {
               Was wir publizieren
             </h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              Pro Berufsbild und Kanton schreiben wir kompakte, faktenbasierte
-              Übersichten: Was die Tätigkeit konkret beinhaltet, mit welchen
-              Löhnen und Aufstiegschancen zu rechnen ist, welche Betriebsformen
-              typischerweise einstellen und worauf Bewerbende bei einem regionalen
-              Wechsel achten sollten. Die Texte ergänzen die täglich aktualisierten
-              Stellenanzeigen aus der Schweizer Holzbau- und Zimmerei-Branche und sollen
-              Berufsleuten eine schnelle, ehrliche Standortbestimmung ermöglichen.
+              Wir publizieren Stellenlisten sowie redaktionelle Grundlagen zum
+              Zimmermanngewerk. Pauschale Aussagen über regionale Nachfrage,
+              Arbeitgeberverhalten oder marktübliche Lohnbänder werden nicht als
+              eigene Fakten ausgegeben. Angaben aus einem Stelleninserat werden
+              als inseratsbezogene Angaben behandelt.
             </p>
           </article>
 
@@ -91,30 +80,43 @@ export default function TeamPage() {
               Quellen und Methodik
             </h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              Lohnangaben aggregieren wir aus öffentlich publizierten Quellen
-              der Schweizer Holzbau-Branche — insbesondere{" "}
+              Für Beruf und Ausbildung verweisen wir auf das offizielle Berufsprofil von{" "}
               <a
-                href="https://www.holzbau-schweiz.ch"
+                href="https://www.berufsberatung.ch/de/berufe/zimmermann-in-efz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-primary"
+              >
+                berufsberatung.ch
+              </a>{" "}
+              sowie die Ausbildungsinformationen von{" "}
+              <a
+                href="https://www.holzbau-schweiz.ch/de/bildung/grundbildung/zimmermann-zimmerin-efz/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-primary"
               >
                 Holzbau Schweiz
-              </a>{" "}
-              (Verband der Schweizer Zimmerei- und Holzbaubetriebe) sowie dem{" "}
+              </a>
+              . Zur Lohnorientierung verlinken wir den statistischen Lohnrechner{" "}
               <a
-                href="https://www.bfs.admin.ch"
+                href="https://www.salarium.bfs.admin.ch/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-primary"
               >
-                Bundesamt für Statistik (BFS)
+                Salarium des BFS
+              </a>{" "}
+              und die{" "}
+              <a
+                href="https://www.seco.admin.ch/de/gesamtarbeitsvertraege-bund"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-primary"
+              >
+                aktuelle GAV-Übersicht des SECO
               </a>
-              . Ergänzend werten wir die täglich gesammelten öffentlichen
-              Stellenausschreibungen aus, die auf zimmermannjob.ch indexiert sind. Die
-              ausgewiesenen Lohnbänder sind Richtgrössen — der konkrete Lohn
-              wird im Bewerbungsprozess individuell verhandelt und hängt von
-              Erfahrung, Spezialisierung, Arbeitgebergrösse und Region ab.
+              . Wir berechnen daraus keine eigenen Lohnbänder.
             </p>
           </article>
 
@@ -123,27 +125,27 @@ export default function TeamPage() {
               Aktualität und Korrekturen
             </h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              Jede redaktionelle Seite trägt ein sichtbares Stand-Datum. Wir
-              überarbeiten die Inhalte regelmässig, sobald Branchenverbände neue
-              Lohnempfehlungen veröffentlichen oder sich die Marktlage in einer
-              Region merklich verändert. Stellst du eine inhaltliche Ungenauigkeit
-              fest, melde dich über die{" "}
+              Die Ausbildungs- und Lohnseiten nennen ihr Prüfdatum und verlinken
+              die verwendeten Quellen direkt. Stand dieser Methodikseite: 19.
+              August 2026. Inhaltliche Hinweise kannst du über die{" "}
               <Link href="/kontakt" className="underline hover:text-primary">
                 Kontaktseite
               </Link>{" "}
-              — wir korrigieren zeitnah und transparent.
+              melden. Hinweise werden geprüft; es gilt keine zugesicherte
+              Bearbeitungszeit.
             </p>
           </article>
 
           <article>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">
-              Stellenvermittlung und Datenschutz
+              Grenzen der Informationen
             </h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              Inserate werden auf zimmermannjob.ch grundsätzlich anonymisiert
-              dargestellt — der konkrete Arbeitgeber wird im persönlichen
-              Erstgespräch offengelegt. Diese Praxis schützt sowohl Bewerbende
-              als auch einstellende Betriebe vor unerwünschter Reichweite.
+              Redaktionelle Inhalte ersetzen weder eine individuelle Lohnanalyse
+              noch eine Rechtsberatung. Ob ein Gesamtarbeitsvertrag anwendbar ist,
+              hängt unter anderem von Betrieb, Tätigkeit und Arbeitsort ab. Für
+              verbindliche Auskünfte sind die zuständige paritätische Kommission
+              oder eine qualifizierte Beratungsstelle zuständig.
             </p>
           </article>
         </section>

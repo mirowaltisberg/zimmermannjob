@@ -1,0 +1,79 @@
+{
+  "jobs": [
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-6fcc59fb2467",
+      "jobUrl": "https://jobs.example.ch/zimmermann-1",
+      "source": "indeed",
+      "title": "Zimmermann EFZ",
+      "company": "Zimmerei Beispiel AG",
+      "location": "Zürich, Zürich",
+      "type": "Vollzeit",
+      "workload": "100%",
+      "datePosted": "$TODAY",
+      "description": "Abbund und Montage tragender Holzkonstruktionen in der Region Zürich.",
+      "expectedDisposition": "ACCEPT",
+      "expectedPublicTitle": "Zimmermann/Zimmerin EFZ"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-f8e7474f4f0c",
+      "jobUrl": "https://jobs.example.ch/zimmermann-2",
+      "source": "linkedin",
+      "title": "Projektleiter Holzbau 80–100%",
+      "company": "Holzbau Muster GmbH",
+      "location": "Bern, Bern",
+      "type": "Festanstellung",
+      "workload": "80-100%",
+      "datePosted": "$TODAY",
+      "description": "Koordination von Zimmermannprojekten, Terminen und Fachpartnern vom Start bis zur Übergabe.",
+      "expectedDisposition": "ACCEPT",
+      "expectedPublicTitle": "Projektleiter/in Holzbau"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-598457a0268f",
+      "jobUrl": "https://jobs.example.ch/zimmermann-3",
+      "source": "google",
+      "title": "Holzbau-Fachmann EFZ",
+      "company": "Holzbau Beispiel AG",
+      "location": "Basel, Basel-Stadt",
+      "type": "Vollzeit",
+      "workload": "100%",
+      "datePosted": "$TODAY",
+      "description": "Fertigung und Montage von Holzrahmen- und Elementbauten.",
+      "expectedDisposition": "ACCEPT",
+      "expectedPublicTitle": "Holzbau-Fachperson EFZ"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-4189b9ab7325",
+      "jobUrl": "https://jobs.example.ch/zimmermann-4",
+      "source": "indeed",
+      "title": "Holzbautechniker HF",
+      "company": "Montage Holzbau Muster AG",
+      "location": "Luzern, Luzern",
+      "type": "Vollzeit",
+      "workload": "80-100%",
+      "datePosted": "$TODAY",
+      "description": "Konstruktion und Arbeitsvorbereitung für mehrgeschossige Holzbauten.",
+      "expectedDisposition": "ACCEPT",
+      "expectedPublicTitle": "Holzbautechniker/in"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-7d02551e9cdc",
+      "jobUrl": "https://jobs.example.ch/zimmermann-efz-token",
+      "source": "indeed",
+      "title": "Zimmerin EFZPlus",
+      "company": "Token Test AG",
+      "location": "Zug, Zug",
+      "type": "Vollzeit",
+      "workload": "100%",
+      "datePosted": "$TODAY",
+      "description": "Aufrichten und Verbinden von Holzbauelementen im Einsatzgebiet Zug.",
+      "expectedDisposition": "ACCEPT",
+      "expectedPublicTitle": "Zimmermann/Zimmerin"
+    }
+  ]
+}

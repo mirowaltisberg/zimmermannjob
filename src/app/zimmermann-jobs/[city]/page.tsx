@@ -1,34 +1,33 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MapPin, Wallet } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ZIMMERMANN_CITIES, findZimmermannCity } from "@/lib/zimmermann-cities";
 import { searchJobListings } from "@/lib/job-catalog";
-import { buildJobPostingSchema } from "@/lib/job-schema";
-import { MapPin, Wallet } from "lucide-react";
 
 export const revalidate = 3600;
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.zimmermannjob.ch";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://zimmermannjob.ch";
 
 interface PageProps {
   params: Promise<{ city: string }>;
 }
 
-const ROLE_LINKS: { slug: string; label: string }[] = [
-  { slug: "zimmermann-efz", label: "Zimmermann EFZ" },
-  { slug: "holzbauer-efz", label: "Holzbauer EFZ" },
-  { slug: "holzbau-vorarbeiter", label: "Holzbau-Vorarbeiter" },
-  { slug: "holzbau-polier", label: "Holzbau-Polier" },
-  { slug: "holzbauplaner", label: "Holzbauplaner" },
-  { slug: "projektleiter-holzbau", label: "Projektleiter Holzbau" },
+const ROLE_LABELS = [
+  "Zimmermann EFZ",
+  "Holzbauer Montage",
+  "Holzbau-Fachperson",
+  "Konstrukteur Holzbau",
+  "Projektleiter Holzbau",
+  "Vorarbeiter Holzbau",
 ];
 
 export async function generateStaticParams() {
-  return ZIMMERMANN_CITIES.map((c) => ({ city: c.slug }));
+  return ZIMMERMANN_CITIES.map((city) => ({ city: city.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -36,8 +35,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const city = findZimmermannCity(citySlug);
   if (!city) return { title: "Zimmermann Jobs" };
 
-  const title = `Zimmermann Jobs ${city.name} 2026 | Stellen für Zimmermann in ${city.name}`;
-  const description = `Offene Zimmermann Stellen in ${city.name} (${city.cantonAbbr}). Lohn ${city.salaryBand}, tägliche Updates aus der ${city.region}.`;
+  const title = `Zimmermann Jobs ${city.name}`;
+  const description = `Stelleninserate mit Zimmermannbezug für ${city.name} und Umgebung. Arbeitsort und Anforderungen im jeweiligen Inserat prüfen.`;
 
   return {
     title,
@@ -50,6 +49,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: "website",
       locale: "de_CH",
     },
+    // No real inventory/editorial gate exists for these generated city pages.
+    robots: { index: false, follow: true },
   };
 }
 
@@ -84,42 +85,12 @@ export default async function ZimmermannCityPage({ params }: PageProps) {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: `Zimmermann Jobs ${city.name}`,
-    description: `Offene Zimmermann Stellen in ${city.name}`,
     numberOfItems: result.jobs.length,
-    itemListElement: result.jobs.slice(0, 15).map((job, i) => ({
+    itemListElement: result.jobs.slice(0, 15).map((job, index) => ({
       "@type": "ListItem",
-      position: i + 1,
+      position: index + 1,
       url: `${SITE_URL}/jobs/${job.id}`,
       name: job.title,
-    })),
-  };
-
-  const FAQS = [
-    {
-      question: `Wie viele Zimmermann Stellen gibt es aktuell in ${city.name}?`,
-      answer: `In ${city.name} und Umgebung sind regelmässig zwischen 20 und 120 offene Zimmermann Stellen ausgeschrieben. Die Zahl schwankt mit Saison, Bautätigkeit und Auftragslage. Pendelbereite Bewerbende erweitern den Suchradius typischerweise auf ${city.commuterTowns.slice(0, 3).join(", ")} und finden so 2- bis 3-mal mehr passende Stellen.`,
-    },
-    {
-      question: `Was verdient ein Zimmermann in ${city.name}?`,
-      answer: `Ein Zimmermann verdient in ${city.name} typischerweise ${city.salaryBand} pro Jahr (12 × Monatslohn). Berufseinsteiger starten am unteren Ende, mit fünf Jahren Erfahrung und Spezialisierungen verschiebt sich der Lohn deutlich nach oben. Detaillierte Vergleichstabellen findest du auf der Lohnübersicht.`,
-    },
-    {
-      question: `Welche Arbeitgeber suchen Zimmermann in ${city.name}?`,
-      answer: `${city.intro} Typische Arbeitgeber sind klassische Schweizer KMU mit 5 bis 80 Mitarbeitenden, spezialisierte Servicefirmen und grössere Industriearbeitgeber. Ergänzt wird das Angebot durch Personaldienstleister mit Temporär- und Vermittlungsstellen.`,
-    },
-    {
-      question: `Wie pendle ich am besten zu einem Zimmermann Job in ${city.name}?`,
-      answer: `${city.name} ist gut mit ÖV erreichbar — Arbeitsplätze liegen im Stadtgebiet (${city.districts.slice(0, 3).join(", ")}) oder in Industrie- und Gewerbezonen am Stadtrand. Pendelorte ${city.commuterTowns.join(", ")} sind typische Wohnorte für ${city.name}-Fachkräfte.`,
-    },
-  ];
-
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: FAQS.map((f) => ({
-      "@type": "Question",
-      name: f.question,
-      acceptedAnswer: { "@type": "Answer", text: f.answer },
     })),
   };
 
@@ -127,12 +98,8 @@ export default async function ZimmermannCityPage({ params }: PageProps) {
     <>
       <JsonLd data={breadcrumbSchema} />
       <JsonLd data={itemListSchema} />
-      <JsonLd data={faqSchema} />
-      {result.jobs.slice(0, 10).map((job) => (
-        <JsonLd key={`schema-${job.source}-${job.id}`} data={buildJobPostingSchema(job)} />
-      ))}
 
-      <main className="bg-white">
+      <main id="main-content" className="bg-background">
         <section className="bg-primary/5 border-b">
           <div className="container mx-auto px-4 sm:px-6 py-10 sm:py-14 max-w-5xl">
             <nav className="text-sm text-slate-500 mb-3" aria-label="Breadcrumb">
@@ -143,21 +110,22 @@ export default async function ZimmermannCityPage({ params }: PageProps) {
             <h1 className="text-3xl sm:text-5xl font-black text-slate-900 leading-tight mb-4">
               Zimmermann Jobs <span className="text-primary">{city.name}</span>
             </h1>
-            <p className="text-slate-600 text-lg leading-relaxed mb-4 max-w-3xl">{city.intro}</p>
+            <p className="text-slate-600 text-lg leading-relaxed mb-4 max-w-3xl">
+              Diese Seite zeigt Suchtreffer mit Zimmermannbezug für {city.name}.
+              Sie erhebt keinen Anspruch auf Vollständigkeit. Prüfe den genauen
+              Arbeitsort und den Einsatzradius im jeweiligen Inserat.
+            </p>
             <div className="flex flex-wrap gap-2 text-xs text-slate-600 mb-6">
               <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
                 Region: {city.region}
               </span>
               <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
-                Lohn-Band: {city.salaryBand}
-              </span>
-              <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
-                {result.total}+ offene Stellen
+                {result.total} {result.total === 1 ? "Treffer" : "Treffer"}
               </span>
             </div>
             <Button asChild>
               <Link href={`/?loc=${encodeURIComponent(city.name)}`}>
-                Jetzt in {city.name} suchen
+                In {city.name} suchen
               </Link>
             </Button>
           </div>
@@ -165,26 +133,24 @@ export default async function ZimmermannCityPage({ params }: PageProps) {
 
         <section className="container mx-auto px-4 sm:px-6 py-10 max-w-5xl">
           <h2 className="text-2xl font-bold text-slate-900 mb-4">
-            Offene Zimmermann Stellen in {city.name}
+            Suchtreffer für {city.name}
           </h2>
           {result.jobs.length === 0 ? (
             <p className="text-slate-600">
-              Aktuell laden wir die Inserate. Schau gleich auf der{" "}
-              <Link href="/" className="text-primary underline">Startseite</Link> vorbei.
+              Für diese Abfrage sind derzeit keine Treffer verfügbar. Nutze die{" "}
+              <Link href="/" className="text-primary underline">Stellensuche</Link>{" "}
+              mit einem anderen Ort oder ohne Ortsfilter.
             </p>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {result.jobs.slice(0, 12).map((job) => (
-                <Card key={`${job.source}-${job.id}`} className="hover:border-primary/40 transition">
+                <Card key={job.id} className="hover:border-primary/40 transition">
                   <CardContent className="p-4">
                     <h3 className="font-semibold text-slate-900 mb-1 line-clamp-2">
                       <Link href={`/jobs/${job.id}`} className="hover:text-primary">
                         {job.title}
                       </Link>
                     </h3>
-                    <p className="text-sm text-slate-600 mb-2 line-clamp-1">
-                      {job.company || "Schweizer Zimmerei / Holzbau-Betrieb"}
-                    </p>
                     <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                       <span className="inline-flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
@@ -207,18 +173,15 @@ export default async function ZimmermannCityPage({ params }: PageProps) {
         <section className="bg-slate-50 border-y">
           <div className="container mx-auto px-4 sm:px-6 py-10 max-w-5xl">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
-              Zimmermann Berufe in {city.name}
+              Zimmermann-Berufsbezeichnungen in der Suche
             </h2>
-            <p className="text-slate-600 mb-5">
-              Spezifische Profile in {city.name} und im Kanton {city.cantonAbbr}:
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {ROLE_LINKS.map((r) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {ROLE_LABELS.map((role) => (
                 <span
-                  key={r.slug}
+                  key={role}
                   className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
                 >
-                  {r.label} — {city.name}
+                  {role}
                 </span>
               ))}
             </div>
@@ -227,52 +190,31 @@ export default async function ZimmermannCityPage({ params }: PageProps) {
 
         <section className="container mx-auto px-4 sm:px-6 py-10 max-w-4xl">
           <h2 className="text-2xl font-bold text-slate-900 mb-4">
-            Pendeln: Wohnorte rund um {city.name}
+            Weitere Orte in der Region
           </h2>
           <p className="text-slate-600 mb-4">
-            Pendelbereite Fachkräfte wohnen typischerweise in einem dieser Orte und arbeiten in {city.name}:
+            Diese Orte können als separate Suchbegriffe verwendet werden; damit
+            wird keine Aussage über Pendelverhalten oder Nachfrage gemacht.
           </p>
           <div className="flex flex-wrap gap-2">
-            {city.commuterTowns.map((town) => (
-              <span key={town} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700">
-                {town}
+            {city.nearbyPlaces.map((place) => (
+              <span key={place} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700">
+                {place}
               </span>
             ))}
           </div>
-          <p className="text-slate-500 text-sm mt-4">
-            Stadtteile mit hoher Nachfrage: {city.districts.join(", ")}.
-          </p>
         </section>
 
-        <section className="bg-slate-50 border-t">
-          <div className="container mx-auto px-4 sm:px-6 py-10 max-w-4xl">
-            <h2 className="text-2xl font-bold text-slate-900 mb-5">
-              Häufig gestellte Fragen — Zimmermann Jobs {city.name}
-            </h2>
-            <div className="space-y-3">
-              {FAQS.map((faq, i) => (
-                <details key={i} className="group rounded-lg border border-slate-200 bg-white overflow-hidden">
-                  <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50">
-                    {faq.question}
-                    <span className="ml-2 shrink-0 text-slate-400 transition-transform group-open:rotate-180" aria-hidden>▾</span>
-                  </summary>
-                  <div className="px-4 pb-4 text-sm text-slate-600 leading-relaxed">{faq.answer}</div>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="container mx-auto px-4 sm:px-6 py-10 max-w-4xl">
-          <h2 className="text-xl font-bold text-slate-900 mb-3">Andere Schweizer Städte</h2>
+        <section className="container mx-auto px-4 sm:px-6 pb-10 max-w-4xl">
+          <h2 className="text-xl font-bold text-slate-900 mb-3">Andere Städte</h2>
           <div className="flex flex-wrap gap-2">
-            { ZIMMERMANN_CITIES.filter((c) => c.slug !== city.slug).map((c) => (
+            {ZIMMERMANN_CITIES.filter((item) => item.slug !== city.slug).map((item) => (
               <Link
-                key={c.slug}
-                href={`/zimmermann-jobs/${c.slug}`}
+                key={item.slug}
+                href={`/zimmermann-jobs/${item.slug}`}
                 className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:border-primary/40 hover:text-primary transition"
               >
-                Zimmermann Jobs {c.name}
+                Zimmermann Jobs {item.name}
               </Link>
             ))}
           </div>

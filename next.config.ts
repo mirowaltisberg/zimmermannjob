@@ -33,11 +33,19 @@ const nextConfig: NextConfig = {
       ["freiburg", "fr"],
       ["graubuenden", "gr"],
     ];
-    return cantonAliases.map(([from, to]) => ({
-      source: `/zimmermannjobs/:role/${from}`,
-      destination: `/zimmermannjobs/:role/${to}`,
-      permanent: true,
-    }));
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host" as const, value: "www.zimmermannjob.ch" }],
+        destination: "https://zimmermannjob.ch/:path*",
+        permanent: true,
+      },
+      ...cantonAliases.map(([from, to]) => ({
+        source: `/zimmermannjobs/:role/${from}`,
+        destination: `/zimmermannjobs/:role/${to}`,
+        permanent: true,
+      })),
+    ];
   },
 
   async headers() {
@@ -54,7 +62,7 @@ const nextConfig: NextConfig = {
           "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://va.vercel-scripts.com",
           "style-src 'self' 'unsafe-inline'",
           "img-src 'self' data: https: blob:",
-          "font-src 'self' https://fonts.gstatic.com",
+          "font-src 'self'",
           "connect-src 'self' https://www.google-analytics.com https://www.facebook.com https://vitals.vercel-insights.com https://va.vercel-scripts.com https://*.supabase.co",
           "frame-src 'none'",
           "object-src 'none'",
@@ -73,12 +81,6 @@ const nextConfig: NextConfig = {
         headers: [
           ...securityHeaders,
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
-        ],
-      },
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
       {

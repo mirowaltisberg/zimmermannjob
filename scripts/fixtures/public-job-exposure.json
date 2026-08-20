@@ -1,0 +1,15 @@
+{
+  "cases": [
+    { "name": "source", "payload": { "source": "linkedin" } },
+    { "name": "scrapedSource", "payload": { "scrapedSource": "indeed" } },
+    { "name": "snake source", "payload": { "scraped_source": "jobs.ch" } },
+    { "name": "company", "payload": { "company": "Raw Employer AG" } },
+    { "name": "raw employer", "payload": { "rawEmployer": "Raw Employer AG" } },
+    { "name": "company URL", "payload": { "companyUrl": "https://employer.example" } },
+    { "name": "raw job URL", "payload": { "jobUrl": "https://source.example/jobs/1" } },
+    { "name": "snake job URL", "payload": { "job_url": "https://source.example/jobs/1" } },
+    { "name": "source link", "payload": { "sourceLink": "https://source.example/apply" } },
+    { "name": "nested employer schema", "payload": { "item": { "hiringOrganization": { "name": "Raw Employer AG" } } } },
+    { "name": "nested full description", "payload": { "jobs": [{ "fullDescription": "raw" }] } }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "jobs": [
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-840295e6f404",
+      "jobUrl": "https://jobs.example.ch/reject-1",
+      "source": "indeed",
+      "title": "Elektroinstallateur EFZ",
+      "description": "Der Betrieb führt neben Elektroarbeiten auch Zimmermannprojekte aus.",
+      "datePosted": "$TODAY",
+      "expectedDisposition": "REJECT"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-b9830013de12",
+      "jobUrl": "https://jobs.example.ch/reject-2",
+      "source": "google",
+      "title": "Projektleiter Maschinenbau",
+      "description": "Im Projekt geht es ausschliesslich um Holzrahmen- und Elementbau.",
+      "datePosted": "$TODAY",
+      "expectedDisposition": "REJECT"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-57265693ff45",
+      "jobUrl": "https://jobs.example.ch/review-1",
+      "source": "linkedin",
+      "title": "Zimmermann / Schreiner",
+      "description": "Gemischte Funktion für Zimmerei und Möbelschreinerei.",
+      "datePosted": "$TODAY",
+      "expectedDisposition": "REVIEW"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-958b224d4fb5",
+      "jobUrl": "https://jobs.example.ch/reject-3",
+      "source": "indeed",
+      "title": "Zimmerreinigung Hotel",
+      "description": "Pflege und Betreuung in einer medizinischen Einrichtung.",
+      "datePosted": "$TODAY",
+      "expectedDisposition": "REJECT"
+    },
+    {
+      "trade": "elektro",
+      "id": "scraped-zimmermann-fb418c1d08fd",
+      "jobUrl": "https://jobs.example.ch/wrong-trade",
+      "source": "indeed",
+      "title": "Zimmermann",
+      "description": "Holzrahmen und Dachkonstruktionen für Neu- und Umbauten.",
+      "datePosted": "$TODAY",
+      "expectedDisposition": "ACCEPT",
+      "expectedIdentityError": "wrong-trade"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-000000000000",
+      "jobUrl": "https://jobs.example.ch/id-mismatch",
+      "source": "indeed",
+      "title": "Zimmermann",
+      "description": "Montage und Prüfung vorgefertigter Holzbauelemente.",
+      "datePosted": "$TODAY",
+      "expectedDisposition": "ACCEPT",
+      "expectedIdentityError": "id-url-mismatch"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-4fbd9d1ea600",
+      "jobUrl": "https://jobs.example.ch/generic-monteur",
+      "source": "indeed",
+      "title": "Monteur 100%",
+      "description": "Montage von Holzbauelementen und Dachkonstruktionen.",
+      "datePosted": "$TODAY",
+      "expectedDisposition": "REJECT"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-e77404e17938",
+      "jobUrl": "https://jobs.example.ch/adjacent-trade-without-context",
+      "source": "google",
+      "title": "Dachdecker EFZ",
+      "description": "Rohrleitungsbau für industrielle Prozesse.",
+      "datePosted": "$TODAY",
+      "expectedDisposition": "REJECT"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-F146A51E95B4",
+      "jobUrl": "https://jobs.example.ch/uppercase-id",
+      "source": "linkedin",
+      "title": "Zimmermann",
+      "description": "Holzrahmen und Dachkonstruktionen für Neu- und Umbauten.",
+      "datePosted": "$TODAY",
+      "expectedDisposition": "ACCEPT",
+      "expectedIdentityError": "invalid-id"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-3fd524fd2f33",
+      "jobUrl": "https://jobs.example.ch/legacy-id",
+      "source": "indeed",
+      "title": "Zimmermann",
+      "description": "Holzrahmen und Dachkonstruktionen für Neu- und Umbauten.",
+      "datePosted": "$TODAY",
+      "expectedDisposition": "ACCEPT",
+      "expectedIdentityError": "invalid-id"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-fbc4584fd086",
+      "jobUrl": "https://jobs.example.ch/rejected-sales-role",
+      "source": "indeed",
+      "title": "Verkaufsberater Holzbau",
+      "description": "Beratung und Verkauf im Ausstellungsraum.",
+      "datePosted": "$TODAY",
+      "expectedDisposition": "REJECT"
+    },
+    {
+      "trade": "zimmermann",
+      "id": "scraped-zimmermann-df770f64aed4",
+      "jobUrl": "https://jobs.example.ch/body-only-planer",
+      "source": "google",
+      "title": "Holzbau",
+      "description": "Planung von Holzrahmen und Elementbauten.",
+      "datePosted": "$TODAY",
+      "expectedDisposition": "REJECT"
+    }
+  ]
+}

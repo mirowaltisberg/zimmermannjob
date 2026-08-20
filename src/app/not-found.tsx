@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { TOP_LANDING_PAGES, getLandingPath } from "@/lib/landing-pages";
+import { SiteBrand } from "@/components/site-brand";
 
 export const metadata: Metadata = {
   title: "Seite nicht gefunden",
@@ -19,22 +19,15 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="border-b header-blur">
-        <div className="container mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center">
+      <header className="trade-header border-b">
+        <div className="container mx-auto px-4 sm:px-6 h-16 sm:h-[4.5rem] flex items-center">
           <Link href="/" className="flex items-center shrink-0">
-            <Image
-              src="/logo.svg"
-              alt="zimmermannjob.ch — Zimmermannjobs in der Schweiz"
-              width={142}
-              height={29}
-              className="h-7 sm:h-8 w-auto"
-              priority
-            />
+            <SiteBrand />
           </Link>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-4">
+      <main id="main-content" className="flex-1 flex items-center justify-center px-4">
         <div className="text-center max-w-lg">
           <p className="text-6xl font-black text-primary mb-4">404</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">
@@ -58,7 +51,7 @@ export default function NotFound() {
                     href={getLandingPath(page)}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-primary/40 hover:text-primary transition-colors"
                   >
-                    {page.role} in {page.canton}
+                    {page.title}
                   </Link>
                 ))}
               </div>
