@@ -10,10 +10,11 @@
     "check:public-jobs": "tsx scripts/check-public-jobs.ts",
     "check:raw-job-boundary": "NODE_PATH=./node_modules/next/dist/compiled node --conditions=react-server --import tsx --test src/lib/scraped-jobs.test.ts",
     "check:direct-hire-boundary": "node --import tsx --test src/lib/direct-hire-opportunities.test.ts",
+    "check:job-schema": "node --import tsx --test src/lib/job-schema.test.ts",
     "check:job-safety:python": "python3 scripts/check_job_safety.py",
     "check:publisher-boundary": "python3 scripts/check_publisher_boundary.py",
     "check:workflow-boundary": "python3 scripts/check_workflow_boundary.py",
-    "check:job-safety": "npm run check:public-jobs && npm run check:raw-job-boundary && npm run check:direct-hire-boundary && npm run check:job-safety:python && npm run check:publisher-boundary && npm run check:workflow-boundary",
+    "check:job-safety": "npm run check:public-jobs && npm run check:raw-job-boundary && npm run check:direct-hire-boundary && npm run check:job-schema && npm run check:job-safety:python && npm run check:publisher-boundary && npm run check:workflow-boundary",
     "check:live-public-jobs": "tsx scripts/check-live-public-jobs.ts",
     "scrape": "scripts/.venv/bin/python scripts/scrape-jobs.py",
     "scrape:quick": "scripts/.venv/bin/python scripts/scrape-jobs.py --quick"

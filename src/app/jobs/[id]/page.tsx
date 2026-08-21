@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { JsonLd } from "@/components/json-ld";
+import { JobPostingJsonLd } from "@/components/job-posting-json-ld";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { getJobListingById, getSimilarJobListings } from "@/lib/job-catalog";
 import type { JobListing } from "@/lib/job-types";
@@ -20,6 +21,7 @@ import { TOP_LANDING_PAGES, getLandingPath } from "@/lib/landing-pages";
 import { areApplicationsAvailable } from "@/lib/applications-config";
 import { SiteBrand } from "@/components/site-brand";
 import { formatSwissDate } from "@/lib/date-format";
+import { buildJobPostingSchema } from "@/lib/job-schema";
 
 interface JobDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -160,6 +162,13 @@ export default async function JobDetailsPage(props: JobDetailsPageProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <JobPostingJsonLd
+        data={buildJobPostingSchema(job, {
+          siteName: "zimmermannjob.ch",
+          siteUrl: SITE_URL,
+          directApply: applicationsAvailable,
+        })}
+      />
       <JsonLd data={buildJobBreadcrumbSchema(job)} />
       <header className="trade-header border-b sticky top-0 z-30">
         <div className="container mx-auto px-4 sm:px-6 h-16 sm:h-[4.5rem] flex items-center justify-between gap-2">
