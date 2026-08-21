@@ -7,6 +7,7 @@ import { getApplicationsConfig, type ApplicationsConfig } from "@/lib/applicatio
 import {
   MAX_APPLICATION_PDF_BYTES,
   MAX_APPLICATION_REQUEST_BYTES,
+  hasDisallowedPdfFeatures,
   hasPdfMagic,
   isAcceptableFormAge,
   isValidEmail,
@@ -52,10 +53,10 @@ function logFailure(event: string, requestId: string) {
   console.error("[applications] request failed", { event, requestId });
 }
 
-function isSameOrigin(request: Request, allowedOrigin: string): boolean {
+function isSameOrigin(request: Request, allowedOrigins: readonly string[]): boolean {
   const origin = request.headers.get("origin");
   const fetchSite = request.headers.get("sec-fetch-site");
-  return origin === allowedOrigin && (!fetchSite || fetchSite === "same-origin");
+  return Boolean(origin && allowedOrigins.includes(origin)) && (!fetchSite || fetchSite === "same-origin");
 }
 
 function getClientAddress(request: Request): string | null {
@@ -165,18 +166,12 @@ async function isRateLimited(
   return count >= config.rateLimitMax ? "limited" : "allowed";
 }
 
-async function scanPdfForMalware(): Promise<"clean" | "rejected" | "unavailable"> {
-  // Fail closed. A concrete, approved scanner adapter must replace this stub.
-  // Applicant files must not be sent to an arbitrary configurable destination.
-  return "unavailable";
-}
-
 export async function POST(request: Request) {
   const requestId = randomUUID();
   const config = getApplicationsConfig();
 
   if (!config) return unavailableResponse();
-  if (!isSameOrigin(request, config.allowedOrigin)) {
+  if (!isSameOrigin(request, config.allowedOrigins)) {
     return jsonError("Die Anfrage konnte nicht verarbeitet werden.", 403);
   }
 
@@ -232,13 +227,11 @@ export async function POST(request: Request) {
       return jsonError("Die PDF-Datei konnte nicht angenommen werden.", 400);
     }
 
-    const scanResult = await scanPdfForMalware();
-    if (scanResult === "unavailable") {
-      logFailure("malware_scan_unavailable", requestId);
-      return unavailableResponse();
-    }
-    if (scanResult === "rejected") {
-      return jsonError("Die PDF-Datei konnte nicht angenommen werden.", 400);
+    if (hasDisallowedPdfFeatures(buffer)) {
+      return jsonError(
+        "Diese PDF enthält aktive, eingebettete oder geschützte Inhalte. Bitte exportiere den Lebenslauf als einfache PDF-Datei und versuche es erneut.",
+        400
+      );
     }
 
     const now = new Date();
@@ -267,6 +260,7 @@ export async function POST(request: Request) {
       phone,
       cv_path: storagePath,
       cv_filename: filename,
+      source: "form",
       site: config.site,
       status: "received",
       consent_version: config.consentVersion,

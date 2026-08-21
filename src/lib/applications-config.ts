@@ -9,12 +9,10 @@ export interface ApplicationControllerIdentity {
 }
 
 export interface ApplicationsConfig {
-  allowedOrigin: string;
+  allowedOrigins: readonly string[];
   consentVersion: string;
   controller: ApplicationControllerIdentity;
   ipHashSecret: string;
-  malwareScanToken: string;
-  malwareScanUrl: string;
   rateLimitMax: number;
   rateLimitWindowMinutes: number;
   retentionDays: number;
@@ -22,18 +20,9 @@ export interface ApplicationsConfig {
   storageBucket: "cvs";
 }
 
-// No scanner vendor or trusted processing destination has been approved yet.
-// Keep this false until a concrete adapter and its data-processing terms are reviewed.
-const MALWARE_SCANNER_ADAPTER_AVAILABLE = false;
-
 function readTrimmed(name: string, maxLength: number): string | null {
   const value = process.env[name]?.trim();
   return value && value.length <= maxLength ? value : null;
-}
-
-function readHeaderValue(name: string, maxLength: number): string | null {
-  const value = readTrimmed(name, maxLength);
-  return value && !/[\u0000-\u001f\u007f]/.test(value) ? value : null;
 }
 
 function readHttpsUrl(name: string, allowPath: boolean): URL | null {
@@ -78,8 +67,6 @@ export function getApplicationsConfig(): ApplicationsConfig | null {
 
   const controller = getApplicationControllerIdentity();
   const allowedOriginUrl = readHttpsUrl("APPLICATIONS_ALLOWED_ORIGIN", false);
-  const malwareScanUrl = readHttpsUrl("APPLICATIONS_MALWARE_SCAN_URL", true);
-  const malwareScanToken = readHeaderValue("APPLICATIONS_MALWARE_SCAN_TOKEN", 2_048);
   const ipHashSecret = readTrimmed("APPLICATIONS_IP_HASH_SECRET", 512);
   const consentVersion = readTrimmed("APPLICATIONS_CONSENT_VERSION", 64);
   const retentionDays = readBoundedInteger(process.env.APPLICATIONS_RETENTION_DAYS, 90, 1, 365);
@@ -94,9 +81,6 @@ export function getApplicationsConfig(): ApplicationsConfig | null {
   if (
     !controller ||
     !allowedOriginUrl ||
-    !malwareScanUrl ||
-    !malwareScanToken ||
-    !MALWARE_SCANNER_ADAPTER_AVAILABLE ||
     !ipHashSecret ||
     ipHashSecret.length < 32 ||
     !consentVersion ||
@@ -109,17 +93,20 @@ export function getApplicationsConfig(): ApplicationsConfig | null {
     return null;
   }
 
+  const alternateHostname = allowedOriginUrl.hostname.startsWith("www.")
+    ? allowedOriginUrl.hostname.slice(4)
+    : `www.${allowedOriginUrl.hostname}`;
+  const alternateOrigin = `${allowedOriginUrl.protocol}//${alternateHostname}`;
+
   return {
-    allowedOrigin: allowedOriginUrl.origin,
+    allowedOrigins: [allowedOriginUrl.origin, alternateOrigin],
     consentVersion,
     controller,
     ipHashSecret,
-    malwareScanToken,
-    malwareScanUrl: malwareScanUrl.toString(),
     rateLimitMax,
     rateLimitWindowMinutes,
     retentionDays,
-    site: allowedOriginUrl.hostname,
+    site: allowedOriginUrl.hostname.replace(/^www\./, ""),
     storageBucket: "cvs",
   };
 }

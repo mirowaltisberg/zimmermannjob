@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  hasDisallowedPdfFeatures,
   hasPdfMagic,
   isAcceptableFormAge,
   isValidEmail,
@@ -28,6 +29,24 @@ test("requires both PDF header and terminal EOF marker", () => {
   const headerOnly = new TextEncoder().encode("%PDF-1.7\nbody\n");
   assert.equal(hasPdfMagic(cleanPdf), true);
   assert.equal(hasPdfMagic(headerOnly), false);
+});
+
+test("rejects active and embedded PDF features, including escaped names", () => {
+  const plainPdf = new TextEncoder().encode("%PDF-1.7\n1 0 obj << /Type /Catalog >>\n%%EOF\n");
+  const javascriptPdf = new TextEncoder().encode(
+    "%PDF-1.7\n1 0 obj << /OpenAction << /S /JavaScript >> >>\n%%EOF\n"
+  );
+  const escapedJavascriptPdf = new TextEncoder().encode(
+    "%PDF-1.7\n1 0 obj << /S /Java#53cript >>\n%%EOF\n"
+  );
+  const embeddedFilePdf = new TextEncoder().encode(
+    "%PDF-1.7\n1 0 obj << /Type /EmbeddedFile >>\n%%EOF\n"
+  );
+
+  assert.equal(hasDisallowedPdfFeatures(plainPdf), false);
+  assert.equal(hasDisallowedPdfFeatures(javascriptPdf), true);
+  assert.equal(hasDisallowedPdfFeatures(escapedJavascriptPdf), true);
+  assert.equal(hasDisallowedPdfFeatures(embeddedFilePdf), true);
 });
 
 test("enforces a bounded form age", () => {
