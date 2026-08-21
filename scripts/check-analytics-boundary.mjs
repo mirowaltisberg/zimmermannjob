@@ -5,7 +5,7 @@ const route = readFileSync("src/app/api/analytics/route.ts", "utf8");
 const client = readFileSync("src/components/privacy-analytics.tsx", "utf8");
 const analytics = readFileSync("src/lib/analytics.ts", "utf8");
 const migration = readFileSync(
-  "supabase/migrations/20260821095647_richer_job_data_and_private_analytics.sql",
+  "supabase/migrations/20260821105443_richer_job_data_and_private_analytics.sql",
   "utf8",
 );
 
