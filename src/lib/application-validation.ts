@@ -7,7 +7,13 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_CHARACTERS_PATTERN = /^\+?[0-9 ()/.-]+$/;
 const SAFE_PDF_FILENAME_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} ._()-]*\.pdf$/iu;
 const DISALLOWED_PDF_FEATURES =
-  /\/(?:AA|AcroForm|EmbeddedFile|Encrypt|ImportData|JavaScript|JS|Launch|Movie|OpenAction|RichMedia|Screen|Sound|SubmitForm|XFA)(?![\p{L}\p{N}])/iu;
+  /\/(?:Encrypt|ImportData|JavaScript|JS|Launch|SubmitForm)(?![\p{L}\p{N}])/iu;
+const ACCEPTED_PDF_MIME_TYPES = new Set([
+  "",
+  "application/octet-stream",
+  "application/pdf",
+  "application/x-pdf",
+]);
 
 export function isValidEmail(value: string): boolean {
   return value.length <= 254 && EMAIL_PATTERN.test(value);
@@ -36,6 +42,10 @@ export function isValidPdfFilename(value: string): boolean {
   );
 }
 
+export function isAcceptedPdfMimeType(value: string): boolean {
+  return ACCEPTED_PDF_MIME_TYPES.has(value.trim().toLowerCase());
+}
+
 export function hasPdfMagic(bytes: Uint8Array): boolean {
   if (bytes.byteLength < 10) {
     return false;
@@ -57,9 +67,9 @@ function decodePdfNameEscapes(value: string): string {
 }
 
 /**
- * Reject active, embedded, encrypted, or form-capable PDF constructs before a
- * CV reaches private storage. This is intentionally conservative: applicants
- * can export the document as a plain PDF and retry.
+ * Reject only executable network/file actions and encrypted documents. Common
+ * scanner metadata, forms, accessibility structures and embedded resources are
+ * accepted; the independent PDF magic check still verifies the file itself.
  */
 export function hasDisallowedPdfFeatures(bytes: Uint8Array): boolean {
   const source = new TextDecoder("latin1").decode(bytes);

@@ -10,6 +10,7 @@ import {
   hasDisallowedPdfFeatures,
   hasPdfMagic,
   isAcceptableFormAge,
+  isAcceptedPdfMimeType,
   isValidEmail,
   isValidPdfFilename,
   isValidPhone,
@@ -202,7 +203,7 @@ export async function POST(request: Request) {
       !isValidEmail(email) ||
       !isValidPhone(phone) ||
       !isValidPdfFilename(filename) ||
-      cv.type !== "application/pdf" ||
+      !isAcceptedPdfMimeType(cv.type) ||
       cv.size < 10 ||
       cv.size > MAX_APPLICATION_PDF_BYTES
     ) {
@@ -229,7 +230,7 @@ export async function POST(request: Request) {
 
     if (hasDisallowedPdfFeatures(buffer)) {
       return jsonError(
-        "Diese PDF enthält aktive, eingebettete oder geschützte Inhalte. Bitte exportiere den Lebenslauf als einfache PDF-Datei und versuche es erneut.",
+        "Diese PDF enthält ausführbare oder verschlüsselte Inhalte. Bitte exportiere den Lebenslauf ohne Passwortschutz und versuche es erneut.",
         400
       );
     }

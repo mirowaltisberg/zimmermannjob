@@ -299,13 +299,17 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
+                    aria-describedby="apply-phone-help"
                     maxLength={40}
                     required
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
-                    placeholder="+41 79 123 45 67"
+                    placeholder="079 123 45 67"
                     className="h-11 rounded-lg"
                   />
+                  <p id="apply-phone-help" className="text-xs text-muted-foreground">
+                    Akzeptiert: 079 123 45 67 oder +41 79 123 45 67.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="apply-cv">Lebenslauf / CV als PDF</Label>
