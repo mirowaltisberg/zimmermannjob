@@ -161,10 +161,63 @@ def safe_string_list(value: Any) -> list[str]:
     return [text(item) for item in value if text(item)]
 
 
+def positive_number(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    number = float(value)
+    return number if math.isfinite(number) and number > 0 else None
+
+
+def validated_source_salary(job: dict[str, Any]) -> dict[str, Any]:
+    """Revalidate structured CHF source fields and regenerate the display text."""
+    currency = text(job.get("salaryCurrency")).upper()
+    unit = text(job.get("salaryUnit")).upper()
+    minimum = positive_number(job.get("salaryMin"))
+    maximum = positive_number(job.get("salaryMax"))
+    limits = {
+        "HOUR": (10, 500),
+        "MONTH": (1_000, 50_000),
+        "YEAR": (15_000, 500_000),
+    }
+    if currency != "CHF" or unit not in limits or (minimum is None and maximum is None):
+        return {"text": None, "min": None, "max": None, "currency": None, "unit": None}
+
+    lower, upper = limits[unit]
+    values = [value for value in (minimum, maximum) if value is not None]
+    if any(value < lower or value > upper for value in values):
+        return {"text": None, "min": None, "max": None, "currency": None, "unit": None}
+    if minimum is not None and maximum is not None and minimum > maximum:
+        return {"text": None, "min": None, "max": None, "currency": None, "unit": None}
+
+    def swiss_number(value: float) -> str:
+        rounded = round(value, 2)
+        if rounded.is_integer():
+            return f"{int(rounded):,}".replace(",", "'")
+        return f"{rounded:,.2f}".replace(",", "'")
+
+    if minimum is not None and maximum is not None:
+        display = f"CHF {swiss_number(minimum)} – {swiss_number(maximum)}"
+    elif minimum is not None:
+        display = f"ab CHF {swiss_number(minimum)}"
+    else:
+        display = f"bis CHF {swiss_number(maximum)}"
+
+    return {
+        "text": display,
+        "min": minimum,
+        "max": maximum,
+        "currency": "CHF",
+        "unit": unit,
+    }
+
+
 def to_db_row(job: dict[str, Any], today: date) -> dict[str, Any]:
     posted = parse_iso_date(job.get("datePosted"))
     if not posted:
         raise PipelineError("validated job lost its publication date")
+    salary = validated_source_salary(job)
+    remote_value = job.get("isRemote")
+    is_remote = remote_value if isinstance(remote_value, bool) else None
 
     return {
         "id": text(job.get("id")),
@@ -181,13 +234,14 @@ def to_db_row(job: dict[str, Any], today: date) -> dict[str, Any]:
         "date_posted": posted.isoformat(),
         "is_new": (today - posted).days <= 3,
         "is_urgent": False,
-        # The current artifact has no independently verifiable provenance for
-        # salary currency or remote status. Fail closed even for artifacts made
-        # by workers that started before the normalizer was hardened.
-        "salary": None,
+        "salary": salary["text"],
+        "salary_min": salary["min"],
+        "salary_max": salary["max"],
+        "salary_currency": salary["currency"],
+        "salary_unit": salary["unit"],
         "job_url": text(job.get("jobUrl")),
         "source": text(job.get("source")).casefold(),
-        "is_remote": None,
+        "is_remote": is_remote,
         "company_url": text(job.get("companyUrl")),
         "trade": TRADE,
     }
@@ -348,8 +402,6 @@ def publish(
     )
 
     rows = [to_db_row(job, today) for job in jobs]
-    if any(row["salary"] is not None or row["is_remote"] is not None for row in rows):
-        raise PipelineError("unverified salary or remote data crossed the publisher boundary")
     fresh_ids = {row["id"] for row in rows}
     stale_ids = set(existing) - fresh_ids
 

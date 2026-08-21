@@ -65,18 +65,27 @@ export function buildPublicJobCopy(input: PublicJobCopyInput): PublicJobCopy {
   const detailSentence = publishedDetails.length
     ? `Im verfügbaren Inserat ist ${publishedDetails.join(" und ")} angegeben.`
     : "Anstellungsart und Pensum sind im verfügbaren Inserat nicht ausgewiesen.";
+  const taskOrientation = profile.responsibilities
+    .slice(0, 2)
+    .map((item) => item.replace(/[.!?]+$/u, ""))
+    .join(" sowie ");
+  const requirementOrientation = profile.requirements
+    .slice(0, 2)
+    .map((item) => item.replace(/[.!?]+$/u, ""))
+    .join(" und ");
 
   return {
     title,
     location,
     type,
     workload,
-    description:
-      "Ausgeschrieben ist die Position " +
-      title +
-      " in " +
-      location +
-      `. ${detailSentence} Arbeitgeberangaben werden auf der öffentlichen Stellenansicht nicht angezeigt.`,
+    description: [
+      `Ausgeschrieben ist die Position ${title} in ${location}.`,
+      detailSentence,
+      `Zur redaktionellen Orientierung gehören in diesem Berufsprofil typischerweise ${taskOrientation}.`,
+      `Als typische Grundlage gelten ${requirementOrientation}; verbindlich sind ausschliesslich die Angaben im konkreten Inserat und Arbeitsvertrag.`,
+      "Arbeitgeberangaben werden auf der öffentlichen Stellenansicht nicht angezeigt.",
+    ].join(" "),
     responsibilities: profile.responsibilities,
     requirements: profile.requirements,
     benefits: [],

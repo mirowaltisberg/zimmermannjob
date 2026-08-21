@@ -42,6 +42,7 @@ const PUBLIC_JOB_KEYS = new Set([
   "isNew",
   "isUrgent",
   "salary",
+  "salaryDetails",
   "isRemote",
   "relevanceScore",
 ]);
@@ -119,6 +120,22 @@ export function assertPublicJobListing(job: JobListing): void {
   if (typeof job.isNew !== "boolean" || typeof job.isUrgent !== "boolean") {
     throw new Error("JobListing has invalid public status flags");
   }
+
+  if (job.salaryDetails) {
+    const { currency, unitText, minValue, maxValue } = job.salaryDetails;
+    const values = [minValue, maxValue].filter(
+      (value): value is number => value !== undefined,
+    );
+    if (
+      currency !== "CHF" ||
+      !["HOUR", "MONTH", "YEAR"].includes(unitText) ||
+      values.length === 0 ||
+      values.some((value) => !Number.isFinite(value) || value <= 0) ||
+      (minValue !== undefined && maxValue !== undefined && minValue > maxValue)
+    ) {
+      throw new Error("JobListing has invalid source salary details");
+    }
+  }
 }
 
 export function serializePublicJob(job: JobListing): JobListing {
@@ -138,6 +155,9 @@ export function serializePublicJob(job: JobListing): JobListing {
     isNew: job.isNew,
     isUrgent: job.isUrgent,
     ...(job.salary ? { salary: job.salary } : {}),
+    ...(job.salaryDetails
+      ? { salaryDetails: { ...job.salaryDetails } }
+      : {}),
     ...(typeof job.isRemote === "boolean" ? { isRemote: job.isRemote } : {}),
     ...(typeof job.relevanceScore === "number" ? { relevanceScore: job.relevanceScore } : {}),
   };

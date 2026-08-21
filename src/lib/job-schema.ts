@@ -39,6 +39,17 @@ export interface JobPostingSchema {
   directApply: boolean;
   employmentType?: string;
   workHours?: string;
+  baseSalary?: {
+    "@type": "MonetaryAmount";
+    currency: "CHF";
+    value: {
+      "@type": "QuantitativeValue";
+      unitText: "HOUR" | "MONTH" | "YEAR";
+      value?: number;
+      minValue?: number;
+      maxValue?: number;
+    };
+  };
 }
 
 const COUNTRY_WIDE = new Set([
@@ -211,6 +222,31 @@ function mapEmploymentType(type: string): string | undefined {
   return undefined;
 }
 
+function buildBaseSalary(job: JobListing): JobPostingSchema["baseSalary"] {
+  const salary = job.salaryDetails;
+  if (!salary) return undefined;
+
+  const hasExactValue =
+    salary.minValue !== undefined &&
+    salary.maxValue !== undefined &&
+    salary.minValue === salary.maxValue;
+
+  return {
+    "@type": "MonetaryAmount",
+    currency: "CHF",
+    value: {
+      "@type": "QuantitativeValue",
+      unitText: salary.unitText,
+      ...(hasExactValue
+        ? { value: salary.minValue }
+        : {
+            ...(salary.minValue !== undefined ? { minValue: salary.minValue } : {}),
+            ...(salary.maxValue !== undefined ? { maxValue: salary.maxValue } : {}),
+          }),
+    },
+  };
+}
+
 export function buildJobPostingSchema(
   job: JobListing,
   options: JobPostingSchemaOptions,
@@ -221,6 +257,7 @@ export function buildJobPostingSchema(
 
   const employmentType = mapEmploymentType(job.type);
   const workHours = job.workload.trim();
+  const baseSalary = buildBaseSalary(job);
   const siteUrl = options.siteUrl.replace(/\/$/, "");
 
   return {
@@ -246,6 +283,7 @@ export function buildJobPostingSchema(
     directApply: options.directApply,
     ...(employmentType ? { employmentType } : {}),
     ...(workHours && workHours !== "Nicht angegeben" ? { workHours } : {}),
+    ...(baseSalary ? { baseSalary } : {}),
   };
 }
 
@@ -258,7 +296,7 @@ export function assertSafeJobPostingSchema(schema: JobPostingSchema): void {
   if (/companyUrl|sourceUrl|jobUrl|rawTitle|rawEmployer|scrapedSource/i.test(serialized)) {
     throw new Error("JobPosting contains a forbidden source or employer field");
   }
-  if (/jobLocationType|applicantLocationRequirements|baseSalary|estimatedSalary/.test(serialized)) {
-    throw new Error("JobPosting contains an unverified remote or salary claim");
+  if (/jobLocationType|applicantLocationRequirements|estimatedSalary/.test(serialized)) {
+    throw new Error("JobPosting contains an unverified remote or estimated salary claim");
   }
 }

@@ -89,6 +89,34 @@ export default function DatenschutzPage() {
           )}
 
           <section>
+            <h2 className="text-xl font-semibold text-slate-900">Anonyme Nutzungsanalyse</h2>
+            <div className="mt-3 space-y-3 text-slate-700">
+              <p>
+                Erst nach einer ausdrücklichen Zustimmung wird eine zufällige
+                Sitzungs-ID im Browser erzeugt. Damit werden Seitenaufrufe,
+                Klickziele, Filterverwendung, Scrolltiefe, Verweildauer und die
+                einzelnen technischen Schritte einer Bewerbung als zeitlich
+                geordnete Sitzung ausgewertet.
+              </p>
+              <p>
+                Namen, E-Mail-Adressen, Telefonnummern, Lebensläufe,
+                Formularinhalte, Tastatureingaben und konkrete Suchbegriffe
+                werden nicht in der Nutzungsanalyse gespeichert. Erfasst werden
+                nur der Seitenpfad ohne Abfrageparameter, die verweisende Domain,
+                grobe Geräteklasse, Spracheinstellung und kontrollierte
+                Ereigniseigenschaften.
+              </p>
+              <p>
+                Die Ereignisse werden ausschliesslich im privaten
+                Supabase-Projekt des Betreibers gespeichert, sind für
+                Browserrollen nicht lesbar und erhalten ein Löschprüfdatum nach
+                400 Tagen. Die Auswahl kann jederzeit über
+                «Tracking-Einstellungen» geändert werden.
+              </p>
+            </div>
+          </section>
+
+          <section>
             <h2 className="text-xl font-semibold text-slate-900">Auskunft und weitere Rechte</h2>
             <p className="mt-3 text-slate-700">
               Betroffene Personen können gegenüber dem konfigurierten Verantwortlichen Auskunft, Berichtigung oder Löschung verlangen und eine Einwilligung für die Zukunft widerrufen. Solange kein Verantwortlicher angegeben ist, bleibt die Online-Einreichung deaktiviert.

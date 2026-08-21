@@ -1,6 +1,10 @@
 import type { MetadataRoute } from "next";
-import { getIndexableJobListings } from "@/lib/job-catalog";
+import { getIndexableJobListings, searchJobListings } from "@/lib/job-catalog";
 import { validatePublicJobDate } from "@/lib/job-freshness";
+import {
+  getLandingPath,
+  SEO_PRIORITY_LANDING_PAGES,
+} from "@/lib/landing-pages";
 
 export const revalidate = 3600;
 
@@ -19,6 +23,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const descriptionLength = job.description?.length || 0;
     return descriptionLength >= minDescriptionLength && validatePublicJobDate(job.datePosted) === null;
   });
+  const landingInventory = await Promise.all(
+    SEO_PRIORITY_LANDING_PAGES.map(async (config) => ({
+      config,
+      result: await searchJobListings({
+        q: config.role,
+        loc: config.canton,
+        limit: 1,
+        offset: 0,
+        sort: "newest",
+      }),
+    })),
+  );
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -65,6 +81,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "daily",
     priority: 0.7,
   }));
+  const landingRoutes: MetadataRoute.Sitemap = landingInventory
+    .filter(({ result }) => result.total >= 3)
+    .map(({ config }) => ({
+      url: toAbsolute(getLandingPath(config)),
+      lastModified: new Date("2026-08-21"),
+      changeFrequency: "daily" as const,
+      priority: 0.8,
+    }));
 
-  return [...staticRoutes, ...jobRoutes];
+  return [...staticRoutes, ...landingRoutes, ...jobRoutes];
 }

@@ -225,7 +225,15 @@ export default async function JobDetailsPage(props: JobDetailsPageProps) {
                     <div className="job-fact">
                       <span className="job-fact__value">
                         <Wallet className="h-4 w-4 text-primary shrink-0" />
-                        {job.salary || "Keine Angabe im Inserat"}
+                        {job.salary || (
+                          <Link
+                            href="/lohn-zimmermann-schweiz"
+                            className="underline decoration-primary/40 underline-offset-2"
+                            data-analytics-action="salary_orientation_from_job"
+                          >
+                            Lohnorientierung berechnen
+                          </Link>
+                        )}
                       </span>
                       <span className="job-fact__label">Lohnangabe</span>
                     </div>

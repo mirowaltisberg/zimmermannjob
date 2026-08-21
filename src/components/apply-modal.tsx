@@ -14,6 +14,7 @@ import {
   isValidPdfFilename,
   isValidPhone,
 } from "@/lib/application-validation";
+import { trackEvent } from "@/lib/analytics";
 import {
   Dialog,
   DialogContent,
@@ -63,6 +64,7 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
     setIsOpen(open);
     if (open) {
       formStartedAtRef.current = Date.now();
+      trackEvent("application_open", { job_id: jobId });
       onOpen?.();
     } else {
       window.setTimeout(resetForm, 300);
@@ -95,6 +97,10 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
   const handleFileSelect = async (file: File) => {
     const fileError = await validateFile(file);
     if (fileError) {
+      trackEvent("application_error", {
+        job_id: jobId,
+        error_kind: "file_validation",
+      });
       trigger("error");
       setCvFile(null);
       setError(fileError);
@@ -104,6 +110,15 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
     trigger("selection");
     setError(null);
     setCvFile(file);
+    trackEvent("application_file_selected", {
+      job_id: jobId,
+      file_size_bucket:
+        file.size < 1_000_000
+          ? "under_1mb"
+          : file.size < 3_000_000
+            ? "1_to_3mb"
+            : "3_to_5mb",
+    });
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,11 +149,19 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
     setError(null);
 
     if (!isValidEmail(email.trim()) || !isValidPhone(phone.trim())) {
+      trackEvent("application_error", {
+        job_id: jobId,
+        error_kind: "contact_validation",
+      });
       setError("Bitte prüfe deine E-Mail-Adresse und Telefonnummer.");
       trigger("error");
       return;
     }
     if (!cvFile || !consent) {
+      trackEvent("application_error", {
+        job_id: jobId,
+        error_kind: "missing_file_or_consent",
+      });
       setError("Bitte füge einen PDF-Lebenslauf hinzu und bestätige die Einwilligung.");
       trigger("error");
       return;
@@ -146,12 +169,17 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
 
     const fileError = await validateFile(cvFile);
     if (fileError) {
+      trackEvent("application_error", {
+        job_id: jobId,
+        error_kind: "file_validation",
+      });
       setError(fileError);
       trigger("error");
       return;
     }
 
     setIsSubmitting(true);
+    trackEvent("application_submit", { job_id: jobId });
     try {
       const formData = new FormData();
       formData.append("jobId", jobId);
@@ -179,8 +207,13 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
 
       setIsSubmitting(false);
       setIsSuccess(true);
+      trackEvent("application_success", { job_id: jobId });
       trigger("success");
     } catch (submissionError) {
+      trackEvent("application_error", {
+        job_id: jobId,
+        error_kind: "submission",
+      });
       setIsSubmitting(false);
       trigger("error");
       setError(

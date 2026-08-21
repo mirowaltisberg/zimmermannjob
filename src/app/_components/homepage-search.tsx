@@ -196,7 +196,7 @@ function DirectHireOpportunityCard({ opportunity }: { opportunity: DirectHireOpp
         </div>
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <p className="min-w-0 flex-1 text-sm leading-relaxed text-slate-600 [overflow-wrap:anywhere]">{opportunity.process}</p>
-          <Link href={opportunity.contactHref} prefetch={false} className="job-card__action inline-flex min-h-11 shrink-0 items-center gap-1 self-start px-1 sm:self-auto">
+          <Link href={opportunity.contactHref} data-analytics-action={`direct_hire_contact:${opportunity.id}`} prefetch={false} className="job-card__action inline-flex min-h-11 shrink-0 items-center gap-1 self-start px-1 sm:self-auto">
             Interesse mitteilen <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </div>

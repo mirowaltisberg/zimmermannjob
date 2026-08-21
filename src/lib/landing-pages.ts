@@ -159,6 +159,22 @@ export const TOP_LANDING_PAGES: LandingPageConfig[] = ALL_ROLES.flatMap((roleKey
   ALL_CANTONS.map((cantonKey) => buildLandingConfig(roleKey, cantonKey))
 );
 
+const PRIORITY_PAIRS: Array<[string | undefined, string]> = [
+  [ALL_ROLES[0], "ZH"],
+  [ALL_ROLES[0], "BE"],
+  [ALL_ROLES[1], "ZH"],
+  [ALL_ROLES[1], "AG"],
+  [ALL_ROLES[2], "ZH"],
+  [ALL_ROLES[2], "SG"],
+];
+
+export const SEO_PRIORITY_LANDING_PAGES: LandingPageConfig[] = PRIORITY_PAIRS.flatMap(
+  ([role, canton]) => {
+    if (!role || !CANTON_CONTENT[canton]) return [];
+    return [buildLandingConfig(role, canton)];
+  },
+);
+
 function normalizeSlug(value: string): string {
   return value
     .toLowerCase()
@@ -180,6 +196,13 @@ export function toCantonSlug(canton: string): string {
 
 export function getLandingPath(config: LandingPageConfig): string {
   return `/zimmermannjobs/${toRoleSlug(config.role)}/${toCantonSlug(config.canton)}`;
+}
+
+export function isSeoPriorityLandingPage(config: LandingPageConfig): boolean {
+  const path = getLandingPath(config);
+  return SEO_PRIORITY_LANDING_PAGES.some(
+    (candidate) => getLandingPath(candidate) === path,
+  );
 }
 
 export function findLandingPageBySlug(roleSlug: string, cantonSlug: string): LandingPageConfig | null {

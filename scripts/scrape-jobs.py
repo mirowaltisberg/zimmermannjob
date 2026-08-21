@@ -80,32 +80,84 @@ def parse_location(raw_location: str) -> str:
 
 
 def extract_workload(description: str) -> str | None:
-    """Try to extract workload percentage from the description text."""
-    patterns = [
-        r'(\d{2,3})\s*%',                    # "100%", "80 %"
-        r'(\d{2,3})\s*-\s*(\d{2,3})\s*%',    # "80-100%"
-        r'Pensum[:\s]*(\d{2,3})\s*%',         # "Pensum: 100%"
-        r'Pensum[:\s]*(\d{2,3})\s*-\s*(\d{2,3})\s*%',  # "Pensum: 80-100%"
-    ]
+    """Extract only percentages explicitly labelled as employment workload."""
+    header = description[:2000]
+    context = (
+        r'(?:Pensum|Arbeitspensum|Beschäftigungsgrad|Beschaeftigungsgrad|'
+        r'Stellenprozent|Teilzeit|Vollzeit)'
+    )
 
-    # Check first 500 chars for workload info
-    header = description[:500]
-
-    # Range pattern first
-    m = re.search(r'(\d{2,3})\s*-\s*(\d{2,3})\s*%', header)
+    m = re.search(
+        context + r'[^\d%]{0,32}(\d{2,3})\s*[-–—]\s*(\d{2,3})\s*%',
+        header,
+        re.IGNORECASE,
+    )
     if m:
         lo, hi = int(m.group(1)), int(m.group(2))
-        if 20 <= lo <= 100 and 20 <= hi <= 100:
-            return f"{lo}-{hi}%"
+        if 20 <= lo <= hi <= 100:
+            return f"{lo}–{hi}%"
 
-    # Single percentage (look for "Pensum" context or standalone)
-    m = re.search(r'(?:Pensum|Arbeitspensum|Beschäftigungsgrad)[:\s]*(\d{2,3})\s*%', header, re.IGNORECASE)
+    m = re.search(
+        context + r'[^\d%]{0,32}(\d{2,3})\s*%',
+        header,
+        re.IGNORECASE,
+    )
     if m:
         val = int(m.group(1))
         if 20 <= val <= 100:
             return f"{val}%"
 
     return None
+
+
+def normalize_salary(raw: dict) -> dict:
+    """Keep only explicit, plausible CHF salary fields supplied by JobSpy."""
+    currency = safe_str(raw.get("currency")).upper().replace("SFR", "CHF")
+    raw_unit = safe_str(raw.get("interval") or raw.get("salary_interval")).lower()
+    unit_map = {
+        "hour": "HOUR", "hourly": "HOUR",
+        "month": "MONTH", "monthly": "MONTH",
+        "year": "YEAR", "yearly": "YEAR", "annual": "YEAR", "annually": "YEAR",
+    }
+    unit = unit_map.get(raw_unit)
+    minimum = safe_num(raw.get("min_amount"))
+    maximum = safe_num(raw.get("max_amount"))
+    limits = {
+        "HOUR": (10, 500),
+        "MONTH": (1000, 50000),
+        "YEAR": (15000, 500000),
+    }
+
+    if currency != "CHF" or unit not in limits or (minimum is None and maximum is None):
+        return {"text": None, "min": None, "max": None, "currency": None, "unit": None}
+
+    lower, upper = limits[unit]
+    values = [value for value in (minimum, maximum) if value is not None]
+    if any(value < lower or value > upper for value in values):
+        return {"text": None, "min": None, "max": None, "currency": None, "unit": None}
+    if minimum is not None and maximum is not None and minimum > maximum:
+        return {"text": None, "min": None, "max": None, "currency": None, "unit": None}
+
+    def swiss_number(value: float) -> str:
+        rounded = round(value, 2)
+        if rounded.is_integer():
+            return f"{int(rounded):,}".replace(",", "'")
+        return f"{rounded:,.2f}".replace(",", "'")
+
+    if minimum is not None and maximum is not None:
+        display = f"CHF {swiss_number(minimum)} – {swiss_number(maximum)}"
+    elif minimum is not None:
+        display = f"ab CHF {swiss_number(minimum)}"
+    else:
+        display = f"bis CHF {swiss_number(maximum)}"
+
+    return {
+        "text": display,
+        "min": minimum,
+        "max": maximum,
+        "currency": "CHF",
+        "unit": unit,
+    }
 
 
 def extract_sections(description: str) -> dict:
@@ -478,15 +530,7 @@ def normalize_job(raw: dict, idx: int) -> dict | None:
     if days_old < -1:
         return None
 
-    # Salary
-    salary_min = safe_num(raw.get("min_amount"))
-    salary_max = safe_num(raw.get("max_amount"))
-    salary_currency = safe_str(raw.get("currency")) or None
-    salary_str = None
-    if salary_currency and salary_min and salary_max:
-        salary_str = f"{salary_currency} {int(salary_min):,} - {int(salary_max):,}"
-    elif salary_currency and salary_min:
-        salary_str = f"ab {salary_currency} {int(salary_min):,}"
+    salary = normalize_salary(raw)
 
     is_remote = safe_bool(raw.get("is_remote"))
 
@@ -510,7 +554,11 @@ def normalize_job(raw: dict, idx: int) -> dict | None:
         "datePosted": date_str,
         "isNew": days_old <= 3,
         "isUrgent": False,
-        "salary": salary_str,
+        "salary": salary["text"],
+        "salaryMin": salary["min"],
+        "salaryMax": salary["max"],
+        "salaryCurrency": salary["currency"],
+        "salaryUnit": salary["unit"],
         "jobUrl": job_url,
         "source": safe_str(raw.get("site")) or "unknown",
         "isRemote": is_remote,

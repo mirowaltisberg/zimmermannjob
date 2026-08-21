@@ -16,6 +16,7 @@ import type {
   DirectHireOpportunity,
   JobFacets,
   JobListing,
+  JobSalaryDetails,
   JobSearchParams,
   JobSort,
   RemoteFilter,
@@ -91,8 +92,8 @@ function dedupeSignature(job: Pick<ScrapedJob, "title" | "company" | "location">
   return normalizeText(job.title) + "|" + normalizeText(job.company) + "|" + normalizeText(job.location);
 }
 
-function toPublicSalary(value: string): string | undefined {
-  const cleaned = cleanJobText(value).trim();
+function toPublicSalary(value: string | null | undefined): string | undefined {
+  const cleaned = cleanJobText(value ?? "").trim();
   if (!cleaned || cleaned.length > 40 || !/\d/.test(cleaned)) {
     return undefined;
   }
@@ -100,6 +101,38 @@ function toPublicSalary(value: string): string | undefined {
   return /^[\d\s'’.,\-–—/%]*(?:CHF)?[\d\s'’.,\-–—/%]*$/i.test(cleaned)
     ? cleaned
     : undefined;
+}
+
+function toPublicSalaryDetails(job: ScrapedJob): JobSalaryDetails | undefined {
+  if (job.salaryCurrency !== "CHF") return undefined;
+  if (!["HOUR", "MONTH", "YEAR"].includes(job.salaryUnit ?? "")) return undefined;
+
+  const minValue = job.salaryMin ?? undefined;
+  const maxValue = job.salaryMax ?? undefined;
+  const limits: Record<JobSalaryDetails["unitText"], [number, number]> = {
+    HOUR: [10, 500],
+    MONTH: [1_000, 50_000],
+    YEAR: [15_000, 500_000],
+  };
+  const unitText = job.salaryUnit as JobSalaryDetails["unitText"];
+  const [lower, upper] = limits[unitText];
+  const values = [minValue, maxValue].filter(
+    (value): value is number => value !== undefined,
+  );
+  if (
+    values.length === 0 ||
+    values.some((value) => !Number.isFinite(value) || value < lower || value > upper) ||
+    (minValue !== undefined && maxValue !== undefined && minValue > maxValue)
+  ) {
+    return undefined;
+  }
+
+  return {
+    currency: "CHF",
+    unitText,
+    ...(minValue !== undefined ? { minValue } : {}),
+    ...(maxValue !== undefined ? { maxValue } : {}),
+  };
 }
 
 function toScrapedListing(job: ScrapedJob, relevanceScore: number): JobListing {
@@ -113,6 +146,7 @@ function toScrapedListing(job: ScrapedJob, relevanceScore: number): JobListing {
     type,
     workload,
   });
+  const salaryDetails = toPublicSalaryDetails(job);
 
   return serializePublicJob({
     id: String(job.id),
@@ -127,7 +161,8 @@ function toScrapedListing(job: ScrapedJob, relevanceScore: number): JobListing {
     datePosted: job.datePosted,
     isNew: Boolean(job.isNew),
     isUrgent: Boolean(job.isUrgent),
-    salary: toPublicSalary(job.salary),
+    salary: salaryDetails ? toPublicSalary(job.salary) : undefined,
+    salaryDetails,
     isRemote: typeof job.isRemote === "boolean" ? job.isRemote : undefined,
     relevanceScore,
   });

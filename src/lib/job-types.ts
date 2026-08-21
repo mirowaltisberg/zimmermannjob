@@ -1,6 +1,13 @@
 export type JobSort = "newest" | "oldest" | "relevance";
 export type RemoteFilter = "any" | "true" | "false";
 
+export interface JobSalaryDetails {
+  currency: "CHF";
+  unitText: "HOUR" | "MONTH" | "YEAR";
+  minValue?: number;
+  maxValue?: number;
+}
+
 /**
  * Public job shape. Employer identities, source URLs, raw descriptions, and
  * contact details must never cross this boundary.
@@ -19,6 +26,7 @@ export interface JobListing {
   isNew: boolean;
   isUrgent: boolean;
   salary?: string;
+  salaryDetails?: JobSalaryDetails;
   isRemote?: boolean;
   relevanceScore?: number;
 }

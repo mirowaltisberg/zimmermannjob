@@ -12,6 +12,7 @@ import {
   findLandingPageBySlug,
   getLandingPath,
   getRelatedLandingPages,
+  isSeoPriorityLandingPage,
   TOP_LANDING_PAGES,
   type LandingPageConfig,
 } from "@/lib/landing-pages";
@@ -63,23 +64,6 @@ function buildItemListSchema(jobs: JobListing[], config: LandingPageConfig) {
   };
 }
 
-function buildFaqSchema(config: LandingPageConfig) {
-  if (!config.faqs || config.faqs.length === 0) return null;
-
-  return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: config.faqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.answer,
-      },
-    })),
-  };
-}
-
 async function resolveLandingConfig(params: LandingPageProps["params"]) {
   const { role, canton } = await params;
   return findLandingPageBySlug(role, canton);
@@ -104,6 +88,17 @@ export async function generateMetadata({ params }: LandingPageProps): Promise<Me
       description: "Aktuelle Zimmermannjobs in der Schweiz.",
     };
   }
+  const priority = isSeoPriorityLandingPage(config);
+  const inventory = priority
+    ? await searchJobListings({
+        q: config.role,
+        loc: config.canton,
+        limit: 1,
+        offset: 0,
+        sort: "newest",
+      })
+    : null;
+  const indexable = priority && (inventory?.total ?? 0) >= 3;
 
   return {
     title: config.title,
@@ -124,7 +119,7 @@ export async function generateMetadata({ params }: LandingPageProps): Promise<Me
     },
     // Programmatic role/canton combinations remain discoverable to users but
     // are not indexable until each page passes inventory and editorial gates.
-    robots: { index: false, follow: true },
+    robots: { index: indexable, follow: true },
   };
 }
 
@@ -144,13 +139,11 @@ export default async function LandingRolePage({ params }: LandingPageProps) {
   });
 
   const relatedPages = getRelatedLandingPages(config, 8);
-  const faqSchema = buildFaqSchema(config);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <JsonLd data={buildBreadcrumbSchema(config)} />
       <JsonLd data={buildItemListSchema(result.jobs, config)} />
-      {faqSchema && <JsonLd data={faqSchema} />}
 
       {/* Header */}
       <header className="trade-header border-b sticky top-0 z-30">

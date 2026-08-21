@@ -26,7 +26,11 @@ export interface ScrapedJob {
   datePosted: string;
   isNew: boolean;
   isUrgent: boolean;
-  salary: string;
+  salary: string | null;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryCurrency: string | null;
+  salaryUnit: string | null;
   jobUrl: string;
   source: string;
   isRemote: boolean | null;
@@ -56,7 +60,11 @@ export interface DbRow {
   date_posted: string | null;
   is_new: boolean;
   is_urgent: boolean;
-  salary: string;
+  salary: string | null;
+  salary_min?: number | string | null;
+  salary_max?: number | string | null;
+  salary_currency?: string | null;
+  salary_unit?: string | null;
   job_url?: string;
   source?: string;
   is_remote: boolean | null;
@@ -75,12 +83,22 @@ export const PUBLICATION_SELECT_FIELDS = [
   "is_new",
   "is_urgent",
   "salary",
+  "salary_min",
+  "salary_max",
+  "salary_currency",
+  "salary_unit",
   "job_url",
   "source",
   "is_remote",
 ];
 
 const PUBLICATION_SELECT = PUBLICATION_SELECT_FIELDS.join(",");
+
+function toFiniteNumber(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
 
 function mapRowToScrapedJob(row: DbRow): ScrapedJob {
   return {
@@ -99,7 +117,11 @@ function mapRowToScrapedJob(row: DbRow): ScrapedJob {
     datePosted: row.date_posted ?? "",
     isNew: isPublicJobNew(row.date_posted),
     isUrgent: false,
-    salary: row.salary,
+    salary: row.salary ?? null,
+    salaryMin: toFiniteNumber(row.salary_min),
+    salaryMax: toFiniteNumber(row.salary_max),
+    salaryCurrency: row.salary_currency ?? null,
+    salaryUnit: row.salary_unit ?? null,
     jobUrl: row.job_url ?? "",
     source: row.source ?? "",
     isRemote: row.is_remote,

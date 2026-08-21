@@ -38,6 +38,37 @@ test("builds the required truthful Google JobPosting fields", () => {
   assert.equal(schema.employmentType, undefined);
 });
 
+test("publishes only structured source salary details", () => {
+  const schema = buildJobPostingSchema(
+    {
+      ...job,
+      salary: "CHF 72'000–84'000 pro Jahr",
+      salaryDetails: {
+        currency: "CHF",
+        unitText: "YEAR",
+        minValue: 72_000,
+        maxValue: 84_000,
+      },
+    },
+    {
+      siteName: "jobs.example.ch",
+      siteUrl: "https://jobs.example.ch",
+      directApply: true,
+    },
+  );
+
+  assert.deepEqual(schema.baseSalary, {
+    "@type": "MonetaryAmount",
+    currency: "CHF",
+    value: {
+      "@type": "QuantitativeValue",
+      unitText: "YEAR",
+      minValue: 72_000,
+      maxValue: 84_000,
+    },
+  });
+});
+
 test("uses exact postal and street data only when present in the source location", () => {
   assert.deepEqual(parseSwissJobAddress("Hauptstrasse 5, 3013 Bern, Bern"), {
     "@type": "PostalAddress",
