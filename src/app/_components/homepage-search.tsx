@@ -572,6 +572,18 @@ export function HomepageSearch({ initialData, initialFilters }: HomepageSearchPr
               </Card>
             )}
 
+            {!isLoading && !errorMessage && jobs.length === 0 && (
+              <Card className="py-0 gap-0">
+                <CardContent className="p-6 text-center">
+                  <p className="font-semibold text-foreground">Keine passenden Jobs gefunden</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Passe deine Suchbegriffe oder Filter an.</p>
+                  <Button onClick={() => window.location.assign("/")} variant="outline" className="mt-4">
+                    Alle aktuellen Stellen anzeigen
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             {isLoading && !isLoadingMore && !errorMessage && (
               <div className="space-y-3 sm:space-y-4 results-enter">
                 {Array.from({ length: 5 }).map((_, i) => (

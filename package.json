@@ -18,7 +18,8 @@
     "check:job-safety": "npm run check:public-jobs && npm run check:raw-job-boundary && npm run check:direct-hire-boundary && npm run check:job-schema && npm run check:analytics-boundary && npm run check:job-safety:python && npm run check:publisher-boundary && npm run check:workflow-boundary",
     "check:live-public-jobs": "tsx scripts/check-live-public-jobs.ts",
     "scrape": "scripts/.venv/bin/python scripts/scrape-jobs.py",
-    "scrape:quick": "scripts/.venv/bin/python scripts/scrape-jobs.py --quick"
+    "scrape:quick": "scripts/.venv/bin/python scripts/scrape-jobs.py --quick",
+    "check:applications": "node --import tsx --test src/lib/application-validation.test.ts src/lib/application-persistence.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.3",

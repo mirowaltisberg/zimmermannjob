@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- caine-Marke: das Block-C aus sieben Würfeln (1:1 wie caine.ch / CaineLoader) -->
+  <rect width="64" height="64" rx="13" fill="#070606"/>
+  <rect x="10" y="10" width="12" height="12" rx="1.5" fill="#E63322"/>
+  <rect x="26" y="10" width="12" height="12" rx="1.5" fill="#E63322"/>
+  <rect x="42" y="10" width="12" height="12" rx="1.5" fill="#E63322"/>
+  <rect x="10" y="26" width="12" height="12" rx="1.5" fill="#E63322"/>
+  <rect x="10" y="42" width="12" height="12" rx="1.5" fill="#E63322"/>
+  <rect x="26" y="42" width="12" height="12" rx="1.5" fill="#E63322"/>
+  <rect x="42" y="42" width="12" height="12" rx="1.5" fill="#E63322"/>
+</svg>

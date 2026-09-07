@@ -15,7 +15,6 @@ const EVENT_FIELDS: Record<string, ReadonlySet<string>> = {
   application_file_selected: new Set(["job_id", "file_size_bucket"]),
   application_open: new Set(["job_id"]),
   application_submit: new Set(["job_id"]),
-  application_success: new Set(["job_id"]),
   click: new Set(["target_kind", "action", "destination"]),
   details_toggle: new Set(["action", "open"]),
   direct_hire_contact: new Set(["profile_id"]),
@@ -116,7 +115,9 @@ function validateProperties(
 
   const properties: Record<string, string | number | boolean> = {};
   for (const [key, nested] of Object.entries(value)) {
-    if (!allowed.has(key) || !isSafePropertyValue(nested)) return null;
+    if (key === "synthetic") {
+      if (typeof nested !== "boolean") return null;
+    } else if (!allowed.has(key) || !isSafePropertyValue(nested)) return null;
     properties[key] = nested;
   }
   return properties;
@@ -137,6 +138,10 @@ function isSameOrigin(request: NextRequest): boolean {
 
 function acceptRate(sessionId: string): boolean {
   const now = Date.now();
+  if (rateState.size >= 10_000) {
+    for (const [key, entry] of rateState) if (now - entry.startedAt >= RATE_WINDOW_MS) rateState.delete(key);
+    if (rateState.size >= 10_000 && !rateState.has(sessionId)) return false;
+  }
   const current = rateState.get(sessionId);
   if (!current || now - current.startedAt >= RATE_WINDOW_MS) {
     rateState.set(sessionId, { startedAt: now, count: 1 });
@@ -159,7 +164,18 @@ export async function POST(request: NextRequest) {
 
   let body: AnalyticsBody;
   try {
-    body = (await request.json()) as AnalyticsBody;
+    const reader = request.body?.getReader();
+    if (!reader) throw new Error("empty");
+    const chunks: Uint8Array[] = [];
+    let length = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      length += value.byteLength;
+      if (length > MAX_BODY_BYTES) { await reader.cancel(); return NextResponse.json({ accepted: false }, { status: 413 }); }
+      chunks.push(value);
+    }
+    body = JSON.parse(Buffer.concat(chunks, length).toString("utf8")) as AnalyticsBody;
   } catch {
     return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
   }

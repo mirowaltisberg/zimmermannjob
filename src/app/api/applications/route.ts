@@ -1,5 +1,7 @@
 import { createHmac, randomUUID } from "node:crypto";
 
+import { applicationIdentity, isSubmissionId, parseApplicationAnalytics, recordApplicationSaved, resolveApplicationInsert } from "@/lib/application-persistence";
+
 import { NextResponse } from "next/server";
 import { getJobListingById } from "@/lib/job-catalog";
 import { createAdminClient } from "@/lib/supabase";
@@ -28,6 +30,9 @@ const ALLOWED_FIELDS = new Set([
   "website",
   "formStartedAt",
   "consent",
+  "submissionId",
+  "analytics",
+  "testRunId",
 ]);
 
 class InvalidApplicationRequest extends Error {}
@@ -184,6 +189,10 @@ export async function POST(request: Request) {
 
   try {
     const formData = await parseBoundedFormData(request);
+    const submissionId = formData.has("submissionId") ? getSingleString(formData, "submissionId") : randomUUID();
+    const analytics = parseApplicationAnalytics(formData.has("analytics") ? getSingleString(formData, "analytics") : "");
+    const testRunId = formData.has("testRunId") ? getSingleString(formData, "testRunId") : "";
+    if (!isSubmissionId(submissionId) || (testRunId && !isSubmissionId(testRunId))) throw new InvalidApplicationRequest();
     const jobId = getSingleString(formData, "jobId");
     const name = getSingleString(formData, "name");
     const email = getSingleString(formData, "email").toLowerCase();
@@ -197,7 +206,6 @@ export async function POST(request: Request) {
     if (
       website !== "" ||
       consent !== "yes" ||
-      !isAcceptableFormAge(formStartedAt) ||
       !/^[a-zA-Z0-9_-]{1,120}$/.test(jobId) ||
       !isValidPlainText(name, 100) ||
       !isValidEmail(email) ||
@@ -208,6 +216,26 @@ export async function POST(request: Request) {
       cv.size > MAX_APPLICATION_PDF_BYTES
     ) {
       return jsonError("Bitte prüfe deine Angaben und die PDF-Datei.", 400);
+    }
+
+    const synthetic = Boolean(testRunId) || process.env.VERCEL_ENV === "preview";
+    if (testRunId && !email.endsWith("@example.invalid")) {
+      return jsonError("Für einen markierten Testlauf bitte eine Adresse unter @example.invalid verwenden.", 400);
+    }
+    const buffer = Buffer.from(await cv.arrayBuffer());
+    const applicationId = applicationIdentity(config.ipHashSecret, config.site, submissionId, [jobId, name, email, phone, filename, testRunId], buffer);
+    const supabase = createAdminClient();
+    const acknowledge = async () => {
+      await recordApplicationSaved(supabase, analytics, config.site, jobId, applicationId, synthetic);
+      return NextResponse.json({ success: true, conversionId: applicationId, synthetic }, {
+        status: 202, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
+      });
+    };
+    const { data: existing, error: lookupError } = await supabase.from("applications").select("id").eq("id", applicationId).maybeSingle();
+    if (lookupError) return unavailableResponse();
+    if (existing) return acknowledge();
+    if (!isAcceptableFormAge(formStartedAt)) {
+      return jsonError("Das Formular war sehr kurz oder lange geöffnet. Deine Angaben bleiben erhalten. Bitte sende sie nochmals ab.", 400);
     }
 
     const ipHash = hashClientAddress(clientAddress, config.ipHashSecret);
@@ -223,7 +251,6 @@ export async function POST(request: Request) {
     const job = await getJobListingById({ id: jobId });
     if (!job) return jsonError("Diese Stelle ist nicht mehr verfügbar.", 404);
 
-    const buffer = Buffer.from(await cv.arrayBuffer());
     if (!hasPdfMagic(buffer)) {
       return jsonError("Die PDF-Datei konnte nicht angenommen werden.", 400);
     }
@@ -237,7 +264,6 @@ export async function POST(request: Request) {
 
     const now = new Date();
     const storagePath = `${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, "0")}/${randomUUID()}.pdf`;
-    const supabase = createAdminClient();
     const { error: uploadError } = await supabase.storage
       .from(config.storageBucket)
       .upload(storagePath, buffer, {
@@ -255,13 +281,14 @@ export async function POST(request: Request) {
       now.getTime() + config.retentionDays * 24 * 60 * 60 * 1_000
     ).toISOString();
     const { error: insertError } = await supabase.from("applications").insert({
+      id: applicationId,
       job_id: jobId,
       name,
       email,
       phone,
       cv_path: storagePath,
       cv_filename: filename,
-      source: "form",
+      source: synthetic ? "synthetic" : "form",
       site: config.site,
       status: "received",
       consent_version: config.consentVersion,
@@ -272,23 +299,14 @@ export async function POST(request: Request) {
     });
 
     if (insertError) {
-      const { error: cleanupError } = await supabase.storage
-        .from(config.storageBucket)
-        .remove([storagePath]);
-      logFailure(cleanupError ? "application_insert_and_cleanup_failed" : "application_insert_failed", requestId);
+      const result = await resolveApplicationInsert(supabase, config.storageBucket, storagePath, applicationId);
+      if (result.cleanupFailed) logFailure("application_upload_cleanup_failed", requestId);
+      if (result.saved) return acknowledge();
+      logFailure(result.unknown ? "application_insert_outcome_unknown" : "application_insert_failed", requestId);
       return unavailableResponse();
     }
 
-    return NextResponse.json(
-      { success: true },
-      {
-        status: 202,
-        headers: {
-          "Cache-Control": "no-store",
-          "X-Content-Type-Options": "nosniff",
-        },
-      }
-    );
+    return acknowledge();
   } catch (error) {
     if (error instanceof ApplicationRequestTooLarge) {
       return jsonError("Die Anfrage oder PDF-Datei ist zu gross.", 413);

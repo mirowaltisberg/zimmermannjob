@@ -1,7 +1,9 @@
 "use client";
 
+import { getApplicationAnalytics, getTestRunId, readSavedApplication } from "@/lib/application-client";
+
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { AlertCircle, CheckCircle2, FileText, Loader2, UploadCloud, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +12,8 @@ import { useHaptic } from "@/hooks/use-haptic";
 import {
   MAX_APPLICATION_PDF_BYTES,
   hasPdfMagic,
+  hasDisallowedPdfFeatures,
+  isAcceptedPdfMimeType,
   isValidEmail,
   isValidPdfFilename,
   isValidPhone,
@@ -28,9 +32,10 @@ interface ApplyModalProps {
   jobId: string;
   jobTitle: string;
   onOpen?: () => void;
+  controllerName?: string;
 }
 
-export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
+export function ApplyModal({ jobId, jobTitle, onOpen, controllerName }: ApplyModalProps) {
   const { trigger } = useHaptic();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,10 +48,15 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
   const [consent, setConsent] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const submissionIdRef = useRef<string | null>(null);
+  const fileSelectionRef = useRef(0);
+  const [isValidatingFile, setIsValidatingFile] = useState(false);
   const formStartedAtRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const submissionInFlight = useRef(false);
 
   const resetForm = () => {
+    submissionIdRef.current = null;
     setName("");
     setEmail("");
     setPhone("");
@@ -61,30 +71,32 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
   };
 
   const handleOpenChange = (open: boolean) => {
+    if (submissionInFlight.current || isValidatingFile) return;
     setIsOpen(open);
     if (open) {
-      formStartedAtRef.current = Date.now();
+      if (isSuccess) resetForm();
+      if (!formStartedAtRef.current) formStartedAtRef.current = Date.now();
+      submissionIdRef.current ??= crypto.randomUUID();
       trackEvent("application_open", { job_id: jobId });
       onOpen?.();
-    } else {
-      window.setTimeout(resetForm, 300);
     }
   };
 
   const validateFile = async (file: File): Promise<string | null> => {
     const filename = file.name.normalize("NFKC").trim();
     if (
-      file.type !== "application/pdf" ||
+      !isAcceptedPdfMimeType(file.type) ||
       !isValidPdfFilename(filename)
     ) {
       return "Bitte lade ausschliesslich eine PDF-Datei mit einem gültigen Dateinamen hoch.";
     }
     if (file.size < 10 || file.size > MAX_APPLICATION_PDF_BYTES) {
-      return "Die PDF-Datei darf maximal 5 MB gross sein.";
+      return "Die PDF-Datei darf maximal 4 MB gross sein.";
     }
 
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
+      if (hasDisallowedPdfFeatures(bytes)) return "Bitte exportiere den Lebenslauf als PDF ohne Passwortschutz oder ausführbare Inhalte.";
       if (!hasPdfMagic(bytes)) {
         return "Die ausgewählte Datei ist keine gültige PDF-Datei.";
       }
@@ -95,14 +107,17 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
   };
 
   const handleFileSelect = async (file: File) => {
+    const selection = ++fileSelectionRef.current;
+    setIsValidatingFile(true);
     const fileError = await validateFile(file);
+    if (selection !== fileSelectionRef.current) return;
+    setIsValidatingFile(false);
     if (fileError) {
       trackEvent("application_error", {
         job_id: jobId,
         error_kind: "file_validation",
       });
       trigger("error");
-      setCvFile(null);
       setError(fileError);
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
@@ -117,7 +132,7 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
           ? "under_1mb"
           : file.size < 3_000_000
             ? "1_to_3mb"
-            : "3_to_5mb",
+            : "3_to_4mb",
     });
   };
 
@@ -126,101 +141,108 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
     if (file) void handleFileSelect(file);
   };
 
-  const handleDrop = useCallback((event: React.DragEvent) => {
+  const handleDrop = (event: React.DragEvent) => {
     event.preventDefault();
     setIsDragging(false);
     const file = event.dataTransfer.files[0];
     if (file) void handleFileSelect(file);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
 
-  const handleDragOver = useCallback((event: React.DragEvent) => {
+  const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault();
     setIsDragging(true);
-  }, []);
+  };
 
-  const handleDragLeave = useCallback((event: React.DragEvent) => {
+  const handleDragLeave = (event: React.DragEvent) => {
     event.preventDefault();
     setIsDragging(false);
-  }, []);
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setError(null);
-
-    if (!isValidEmail(email.trim()) || !isValidPhone(phone.trim())) {
-      trackEvent("application_error", {
-        job_id: jobId,
-        error_kind: "contact_validation",
-      });
-      setError("Bitte prüfe deine E-Mail-Adresse und Telefonnummer.");
-      trigger("error");
-      return;
-    }
-    if (!cvFile || !consent) {
-      trackEvent("application_error", {
-        job_id: jobId,
-        error_kind: "missing_file_or_consent",
-      });
-      setError("Bitte füge einen PDF-Lebenslauf hinzu und bestätige die Einwilligung.");
-      trigger("error");
-      return;
-    }
-
-    const fileError = await validateFile(cvFile);
-    if (fileError) {
-      trackEvent("application_error", {
-        job_id: jobId,
-        error_kind: "file_validation",
-      });
-      setError(fileError);
-      trigger("error");
-      return;
-    }
-
-    setIsSubmitting(true);
-    trackEvent("application_submit", { job_id: jobId });
+    if (submissionInFlight.current || isValidatingFile || isSuccess) return;
+    submissionInFlight.current = true;
     try {
-      const formData = new FormData();
-      formData.append("jobId", jobId);
-      formData.append("name", name.trim());
-      formData.append("email", email.trim());
-      formData.append("phone", phone.trim());
-      formData.append("website", website);
-      formData.append("formStartedAt", String(formStartedAtRef.current));
-      formData.append("consent", "yes");
-      formData.append("cv", cvFile);
+      setError(null);
 
-      const response = await fetch("/api/applications", {
-        method: "POST",
-        body: formData,
-        credentials: "same-origin",
-        headers: { Accept: "application/json" },
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(
-          (data as { error?: string }).error || "Online-Bewerbungen sind derzeit nicht verfügbar."
-        );
+      if (!isValidEmail(email.trim()) || !isValidPhone(phone.trim())) {
+        trackEvent("application_error", {
+          job_id: jobId,
+          error_kind: "contact_validation",
+        });
+        setError("Bitte prüfe deine E-Mail-Adresse und Telefonnummer.");
+        trigger("error");
+        return;
+      }
+      if (!cvFile || !consent) {
+        trackEvent("application_error", {
+          job_id: jobId,
+          error_kind: "missing_file_or_consent",
+        });
+        setError("Bitte füge einen PDF-Lebenslauf hinzu und bestätige die Einwilligung.");
+        trigger("error");
+        return;
       }
 
-      setIsSubmitting(false);
-      setIsSuccess(true);
-      trackEvent("application_success", { job_id: jobId });
-      trigger("success");
-    } catch (submissionError) {
-      trackEvent("application_error", {
-        job_id: jobId,
-        error_kind: "submission",
-      });
-      setIsSubmitting(false);
-      trigger("error");
-      setError(
-        submissionError instanceof Error
-          ? submissionError.message
-          : "Online-Bewerbungen sind derzeit nicht verfügbar."
-      );
+      const fileError = await validateFile(cvFile);
+      if (fileError) {
+        trackEvent("application_error", {
+          job_id: jobId,
+          error_kind: "file_validation",
+        });
+        setError(fileError);
+        trigger("error");
+        return;
+      }
+
+      setIsSubmitting(true);
+      trackEvent("application_submit", { job_id: jobId });
+      try {
+        const formData = new FormData();
+        formData.append("jobId", jobId);
+        formData.append("name", name.trim());
+        formData.append("email", email.trim());
+        formData.append("phone", phone.trim());
+        formData.append("website", website);
+        formData.append("formStartedAt", String(formStartedAtRef.current));
+        formData.append("consent", "yes");
+        formData.append("cv", cvFile);
+        submissionIdRef.current ??= crypto.randomUUID();
+        formData.append("submissionId", submissionIdRef.current);
+        formData.append("analytics", getApplicationAnalytics());
+        formData.append("testRunId", getTestRunId() ?? "");
+
+        const response = await fetch("/api/applications", {
+          method: "POST",
+          body: formData,
+          credentials: "same-origin",
+          signal: AbortSignal.timeout(45_000),
+          headers: { Accept: "application/json" },
+        });
+
+        await readSavedApplication(response);
+
+        setIsSubmitting(false);
+        setIsSuccess(true);
+        trigger("success");
+      } catch (submissionError) {
+        formStartedAtRef.current = Date.now() - 3_000;
+        trackEvent("application_error", {
+          job_id: jobId,
+          error_kind: "submission",
+        });
+        setIsSubmitting(false);
+        trigger("error");
+        setError(
+          submissionError instanceof TypeError || (submissionError instanceof DOMException && ["AbortError", "TimeoutError"].includes(submissionError.name))
+            ? "Die Verbindung wurde unterbrochen. Deine Angaben bleiben erhalten. Bitte versuche es erneut."
+            : submissionError instanceof Error
+            ? submissionError.message
+            : "Online-Bewerbungen sind derzeit nicht verfügbar."
+        );
+      }
+    } finally {
+      submissionInFlight.current = false;
     }
   };
 
@@ -234,7 +256,7 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="w-full h-12 text-base sm:text-lg font-bold shadow-lg shadow-primary/20 rounded-xl btn-interactive">
-          Angaben übermitteln
+          Bewerbung starten
         </Button>
       </DialogTrigger>
 
@@ -243,14 +265,15 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
           <>
             <DialogHeader>
               <DialogTitle className="text-xl sm:text-2xl font-bold text-slate-900 break-words pr-8">
-                Angaben für {jobTitle}
+                Bewerbung für {jobTitle}
               </DialogTitle>
               <DialogDescription className="text-slate-600">
-                Die Angaben werden vom Betreiber dieser Plattform zur internen Prüfung gespeichert. Es erfolgt keine automatische Weiterleitung an einen Arbeitgeber.
+                Dein Dossier erhält {controllerName ?? "das Team dieser Plattform"} zur internen Prüfung. Eine Weiterleitung an einen Arbeitgeber erfolgt nicht automatisch.
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-5 mt-4">
+            <form onSubmit={handleSubmit} aria-busy={isSubmitting} className="space-y-5 mt-4">
+              <fieldset disabled={isSubmitting} className="space-y-5 min-w-0">
               <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
                 <Label htmlFor="apply-website">Website</Label>
                 <Input
@@ -274,7 +297,7 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                     placeholder="Max Muster"
-                    className="h-11 rounded-lg"
+                    className="h-11 rounded-lg text-base"
                   />
                 </div>
                 <div className="space-y-2">
@@ -289,7 +312,7 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     placeholder="max@beispiel.ch"
-                    className="h-11 rounded-lg"
+                    className="h-11 rounded-lg text-base"
                   />
                 </div>
                 <div className="space-y-2">
@@ -305,7 +328,7 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
                     placeholder="079 123 45 67"
-                    className="h-11 rounded-lg"
+                    className="h-11 rounded-lg text-base"
                   />
                   <p id="apply-phone-help" className="text-xs text-muted-foreground">
                     Akzeptiert: 079 123 45 67 oder +41 79 123 45 67.
@@ -318,18 +341,22 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
                     ref={fileInputRef}
                     type="file"
                     accept="application/pdf,.pdf"
-                    required
+                    aria-describedby="apply-cv-help"
                     className="sr-only"
                     onChange={handleFileChange}
                   />
+
+                  <p id="apply-cv-help" className="text-sm text-slate-600">PDF, maximal 4 MB. Name, E-Mail und Telefon werden für die Kontaktaufnahme benötigt.</p>
+                  {isValidatingFile && <p role="status" className="text-sm">PDF wird geprüft...</p>}
 
                   {!cvFile ? (
                     <div
                       role="button"
                       tabIndex={0}
+                      aria-label="PDF-Lebenslauf auswählen"
                       onClick={() => fileInputRef.current?.click()}
                       onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") fileInputRef.current?.click();
+                        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileInputRef.current?.click(); }
                       }}
                       onDrop={handleDrop}
                       onDragOver={handleDragOver}
@@ -340,7 +367,7 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
                     >
                       <UploadCloud className="h-7 w-7 text-primary mb-2" />
                       <p className="text-sm font-medium text-slate-900">PDF auswählen oder hineinziehen</p>
-                      <p className="text-xs text-slate-500 mt-1">Ausschliesslich PDF, maximal 5 MB</p>
+                      <p className="text-xs text-slate-500 mt-1">Ausschliesslich PDF, maximal 4 MB</p>
                     </div>
                   ) : (
                     <div className="border border-slate-200 rounded-xl p-3 flex items-center gap-3">
@@ -356,7 +383,7 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
                           setCvFile(null);
                           if (fileInputRef.current) fileInputRef.current.value = "";
                         }}
-                        className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500"
+                        className="flex min-h-11 min-w-11 items-center justify-center rounded-md hover:bg-slate-100 text-slate-500"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -371,7 +398,7 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
                   required
                   checked={consent}
                   onChange={(event) => setConsent(event.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-slate-300"
+                  className="mt-1 h-5 w-5 shrink-0 rounded border-slate-300"
                 />
                 <span>
                   Ich willige ein, dass der in der{" "}
@@ -397,24 +424,28 @@ export function ApplyModal({ jobId, jobTitle, onOpen }: ApplyModalProps) {
               <Button
                 type="submit"
                 className="w-full h-12 rounded-xl text-base font-bold"
-                disabled={isSubmitting || !cvFile || !consent}
+                disabled={isSubmitting || isValidatingFile}
               >
                 {isSubmitting ? (
-                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Angaben werden geprüft...</>
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Bewerbung wird gespeichert...</>
                 ) : (
-                  "Angaben zur Prüfung speichern"
+                  "Bewerbung zur Prüfung senden"
                 )}
               </Button>
+              <p className="text-sm text-slate-600">Dein Dossier wird intern geprüft. Rückfragen sind über die Kontaktseite möglich. Eine Weiterleitung an einen Arbeitgeber erfolgt nicht automatisch.</p>
+              <Link href="/kontakt" target="_blank" rel="noopener noreferrer" className="inline-block text-sm underline">Kontakt aufnehmen</Link>
+              </fieldset>
             </form>
           </>
         ) : (
           <div className="py-10 flex flex-col items-center justify-center text-center space-y-4">
             <CheckCircle2 className="h-14 w-14 text-green-600" />
-            <h2 className="text-2xl font-bold text-slate-900">Angaben gespeichert</h2>
-            <p className="text-slate-600">
-              Deine Angaben wurden zur internen Prüfung gespeichert. Dies bestätigt keine Weiterleitung an den Arbeitgeber.
-            </p>
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+            <DialogTitle className="text-2xl font-bold text-slate-900">Bewerbung gespeichert</DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Dein Dossier ist zur internen Prüfung eingegangen. Für eine Kontaktaufnahme liegen deine E-Mail-Adresse und Telefonnummer vor. Es wurde nicht automatisch an einen Arbeitgeber weitergeleitet.
+            </DialogDescription>
+            <Link href="/kontakt" className="text-sm underline">Rückfrage zu deiner Bewerbung</Link>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Schliessen
             </Button>
           </div>

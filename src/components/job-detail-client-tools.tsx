@@ -80,12 +80,14 @@ interface JobPrimaryActionProps {
   jobId: string;
   jobTitle: string;
   applicationsAvailable: boolean;
+  controllerName?: string;
 }
 
 export function JobPrimaryAction({
   jobId,
   jobTitle,
   applicationsAvailable,
+  controllerName,
 }: JobPrimaryActionProps) {
   if (!applicationsAvailable) {
     return (
@@ -107,6 +109,7 @@ export function JobPrimaryAction({
     <ApplyModal
       jobId={jobId}
       jobTitle={jobTitle}
+      controllerName={controllerName}
       onOpen={() =>
         trackEvent("apply_click", {
           job_id: jobId,
