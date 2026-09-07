@@ -45,7 +45,9 @@ export function trackEvent(eventName: string, payload: Record<string, unknown> =
     }
   }
   assertNoForbiddenPublicFields(payload, `analytics event ${eventName}`);
-  if (window.localStorage.getItem("jobsite-analytics-consent") !== "accepted") {
+  try {
+    if (window.localStorage.getItem("jobsite-analytics-consent") !== "accepted") return;
+  } catch {
     return;
   }
   window.dispatchEvent(

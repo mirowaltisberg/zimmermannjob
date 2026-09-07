@@ -2,18 +2,24 @@
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/** An explicit test run survives navigation within this tab, without applicant data. */
-export function getTestRunId(): string | null {
+/** Explicit test metadata survives navigation, and storage failure does not block applying. */
+function readTestValue(parameter: string, key: string, valid: (value: string) => boolean): string | null {
   if (typeof window === "undefined") return null;
-  try {
-    const fromUrl = new URLSearchParams(window.location.search).get("cro_test");
-    if (fromUrl && UUID.test(fromUrl)) {
-      window.sessionStorage.setItem("jobsite-cro-test", fromUrl);
-      return fromUrl;
-    }
-    const stored = window.sessionStorage.getItem("jobsite-cro-test");
-    return stored && UUID.test(stored) ? stored : null;
-  } catch { return null; }
+  const value = new URLSearchParams(window.location.search).get(parameter);
+  if (value && valid(value)) {
+    try { window.sessionStorage.setItem(key, value); } catch { /* Read URL without storage. */ }
+    return value;
+  }
+  try { const stored = window.sessionStorage.getItem(key); return stored && valid(stored) ? stored : null; }
+  catch { return null; }
+}
+
+export function getTestRunId(): string | null {
+  return readTestValue("cro_test", "jobsite-cro-test", (value) => UUID.test(value));
+}
+
+export function getTestRunToken(): string | null {
+  return readTestValue("cro_token", "jobsite-cro-token", (value) => /^\d{10}\.[A-Za-z0-9_-]{43}$/.test(value));
 }
 
 export function isSyntheticVisit(): boolean {

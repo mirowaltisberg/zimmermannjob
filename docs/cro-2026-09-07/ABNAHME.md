@@ -1,44 +1,49 @@
 ![Caine](caine-logo.svg)
 
-# Caine · Bewerbungsweg zimmermannjob.ch
+# Caine · Einfacher Bewerbungsweg auf zimmermannjob.ch
 
-**QER-241 · 7. September 2026 · Umsetzung und technische Abnahme, noch keine produktive Auslieferung und kein belegter Mehrertrag.**
+**QER-241 · 7. September 2026 · Stand vor produktiver Auslieferung.**
 
-Nach einer verlorenen Speicherbestätigung konnten erneute Versuche doppelte Dossiers erzeugen. Die neue Bestätigung setzt einen tatsächlichen Datensatz voraus. Identische Versuche innerhalb desselben Formularvorgangs nutzen eine stabile, undurchsichtige Bewerbungs-ID; auch gleichzeitige Versuche erzeugen einen Datensatz. Bei ungewissem Datenbankausgang bleibt ein möglicherweise bereits zugeordnetes CV erhalten. Ein verändertes Dossier oder ein neuer Formularvorgang gilt als neue Bewerbung.
+Das Bewerbungsformular verlangt nur noch den vollständigen Namen, einen PDF-CV und die Einwilligung zur Prüfung. Separate E-Mail- und Telefonfelder entfallen. Der Hinweis bittet um einen CV mit Kontaktdaten; die Berater entnehmen diese dem Dossier. Die entsprechenden Datenbankfelder bleiben beim neuen Ablauf leer, statt erfundene Platzhalter zu erhalten. Ältere Clients dürfen während des Rollouts weiterhin gültige Kontaktfelder übermitteln.
 
-## Sichtbare Änderungen
+## Sichtbare Verbesserungen
 
-- «Bewerbung starten» führt zum beschrifteten Formular mit passender Tastatur und automatischer Vervollständigung. Eingaben und gültiges PDF bleiben bei Fehlern und erneutem Öffnen erhalten.
-- PDF-Grenze 4 MB mit verständlicher Prüfung; übliche MIME-Angaben von Handys und Scannern werden einheitlich angenommen. Die bestehende CV-Pflicht bleibt erhalten.
-- «Bewerbung zur Prüfung senden» erklärt die interne Bearbeitung. «Bewerbung gespeichert» erscheint nur nach gültiger Serverbestätigung; keine automatische Arbeitgeberweiterleitung oder unbelegte Antwortzeit.
-- Bei keinen konkreten Treffern führt «Alle aktuellen Stellen anzeigen» zurück zur ungefilterten Suche, auch wenn ergänzend Direktanstellungsprofile vorhanden sind.
-- «Später entscheiden» schliesst den Tracking-Dialog ohne Einwilligung. Die Auswahl bleibt über «Tracking-Einstellungen» erreichbar; Tracking ist keine Bewerbungsvoraussetzung.
-- Stellen-Seitentitel enthalten Beruf, Ort und eine kurze Stellenreferenz; die vorhandene Markengrafik dient als erreichbares Vorschau-Bild.
+- «CV auswählen» öffnet auch mit Enter und Leertaste genau eine Dateiauswahl. «Anderen CV wählen» ersetzt eine Datei direkt; eine ungültige Ersatzdatei verwirft den bestehenden gültigen CV nicht. Entfernen während laufender Prüfung kann keine alte Auswahl wiederherstellen.
+- PDF bis 4 MB, übliche Dateinamen und Handy-/Scanner-Dateitypen werden angenommen. Zu grosse, falsche, verschlüsselte oder erkennbar ausführbare PDFs erhalten verständliche Meldungen. Die Prüfung ist keine vollständige Schadsoftwareanalyse.
+- Name und CV bleiben bei Netzfehlern, verlorener Speicherantwort und erneutem Öffnen erhalten. Während der abschliessenden Dateiprüfung und Speicherung sind Eingaben gesperrt. Schnelles Ausfüllen führt nicht mehr zu einer künstlichen Mindestwartezeit.
+- «Bewerbung gespeichert» erscheint erst nach bestätigtem Datensatz. Identische und gleichzeitige Versuche desselben Formularvorgangs erzeugen ein Dossier. Änderungen am Dossier oder ein neuer Formularvorgang gelten als neue Bewerbung.
+- Verantwortlicher Empfänger und interne Prüfung sind erklärt. Es wird keine automatische Arbeitgeberweiterleitung oder unbelegte Antwortzeit versprochen.
+- «Später entscheiden» erlaubt die Bewerbung ohne Messzustimmung. Gesperrter Browserspeicher verhindert den Bewerbungsweg nicht. Auch 320 px breite Bildschirme bleiben ohne horizontalen Überlauf nutzbar.
+- «Keine passenden offenen Stellen gefunden» bietet «Alle aktuellen Stellen anzeigen», auch wenn ergänzende Direktanstellungsprofile existieren. Profile sind keine konkreten offenen Stellen.
+- Stellen-Seitentitel enthalten Beruf, Ort und die sichtbare Stellenreferenz; vorhandene Markengrafiken liefern Linkvorschauen. Elektro erhält JobPosting nur für echte Vakanzen und eine korrigierte Thurgau-Weiterleitung.
 
-## Messung und Datenbank
+## Speicherung und Messung
 
-Die Migration `20260907150828_cro_verified_application_funnel.sql` wurde am 07.09.2026 einmal im gemeinsamen Rolejobs-Projekt angewendet. Sie erstellt eine private Sitzungsübersicht und einen eindeutigen Index für `application_saved`. Die identische Migration liegt in allen zehn Repositories; beim weiteren Rollout den bereits angewendeten gemeinsamen Stand beachten. Kein öffentlicher Zugriff wird erteilt.
+Eine stabile serverseitige Bewerbungs-ID verhindert Doppelablagen nach Wiederholungen. Bei einem ungewissen Datenbankausgang bleibt die Datei erhalten, bis ihre Zuordnung geklärt ist; eine noch leere Nachschau beweist nach einem Verbindungsfehler keine fehlgeschlagene Speicherung. Bestätigte überschüssige Dateien aus parallelen Versuchen werden bereinigt. Zurückbehaltene Dateien erfordern vor einer späteren Löschung eine erneute Zuordnungsprüfung.
 
-`application_saved` wird nur vom Bewerbungsserver nach bestätigter Speicherung und nur mit übergebenem Messkontext nach Einwilligung geschrieben. Client-Anfragen dürfen dieses Ereignis nicht selbst melden. Alte `application_success`-Ereignisse zählen in der neuen Übersicht nicht als Speicherungen. Kontaktdaten, Suchbegriffe und CV-Inhalte gehören nicht in die Nutzungsereignisse.
+Die optionale Messung von `application_saved` wartet höchstens 1,5 Sekunden auf den Analysespeicher. Ein Ausfall dieser Messung darf die Bestätigung eines gespeicherten Dossiers nicht verhindern. Ein eindeutiger Index verhindert doppelte Speicherereignisse. Die Nutzungsübersicht umfasst nur zustimmende Besucher und keine Kontaktdaten oder CV-Inhalte. Dossiers ohne Messzustimmung werden separat gezählt; diese Zahl nicht durch die gemessenen Sitzungen teilen.
 
-Markierte Prüfungen nutzen `?cro_test=<UUID>` und Adressen unter `@example.invalid`; die Kennzeichnung bleibt innerhalb des Tabs erhalten. Vorschauen sind synthetisch. Automatisierte und markierte Besuche lösen keine Google-Werbemessung aus. Echte Tests in Produktion ebenfalls ausdrücklich markieren. Historische Testbesuche lassen sich dadurch nicht nachträglich zuverlässig trennen.
+Produktionsprüfungen brauchen `cro_test=<UUID>` und einen kurz gültigen `cro_token`, der serverseitig an Website, Testlauf und Ablaufzeit gebunden geprüft wird. Eine frei gewählte Browser-Kennzeichnung macht eine Bewerbung nicht synthetisch. Vorschauen sind synthetisch; markierte Tests senden keine Google-Werbemessung. Signierte Tests beanspruchen nicht das Kontingent echter Bewerbungen. Zusätzlich begrenzt jede Serverinstanz Anfragen vor der Dateiverarbeitung auf 30 pro Minute und Client. Das ist kein verteilter globaler Zähler; die bestehende dauerhafte Begrenzung gespeicherter echter Bewerbungen bleibt separat bestehen.
 
-## Verifikation
+Im gemeinsamen privaten Rolejobs-Projekt bereits einmal angewendete Migrationen:
 
-- Je Website vier reale Browserdurchläufe: 390 × 844 und 1440 × 1000, jeweils Messung akzeptiert/abgelehnt. PDF-Fehler, Netzfehler, verlorene Bestätigung, erneutes Absenden und Erfolg geprüft. Je Vorgang genau ein Dossier und bei Zustimmung genau ein Speicherereignis; ohne Zustimmung keines. Keine Google-Anfragen in synthetischen Durchläufen.
-- Zusätzlicher API-Durchlauf: zwei gleichzeitige Erstübermittlungen ergeben einen Datensatz mit weiterhin lesbarem privatem CV. Falscher Ursprung, ungültiges/verschlüsseltes PDF, fehlende Stelle und erfundene Speicherereignisse abgewiesen.
-- Suche tatsächlich bedient, leeres Resultat zurückgesetzt, Stelle gewählt und Formular mit Tastatur geöffnet/geschlossen. Kein horizontaler Überlauf auf 390 px.
-- Anwendungstests (12 pro Website), ESLint für geänderte Dateien, öffentliche Datenabgrenzung und vorhandene Schema-/Analyseprüfungen bestanden. Produktionsbuild bestanden.
-- Synthetische Bewerbungen und zugeordnete Dateien gezielt entfernt; verbleibende Testdossiers: 0. Echte Dossiers blieben erhalten.
+- `20260907150828_cro_verified_application_funnel.sql`: private Sitzungsübersicht und eindeutiger Speicherereignis-Index, gültig und einsatzbereit. Bereits angewendete Migration nicht nachträglich für einen anderen Indexaufbau umschreiben.
+- `20260907155803_cv_name_applications.sql`: E-Mail und Telefon dürfen leer bleiben; Name bleibt erforderlich. Alte Dossiers bleiben unverändert.
 
-Die Browserabnahme lief auf lokalen Next-Servern gegen den vorhandenen privaten Speicher. Der Testadapter setzte den freigegebenen Produktions-Origin und reservierte Test-IP-Adressen; die Anwendung selbst behält ihre Ursprungsprüfung. Testkonfiguration und synthetische Empfängerangaben wurden nicht in Produktionsvariablen geschrieben. Das ist keine Abnahme eines bereits ausgerollten Produktionsdeployments.
+Beide Migrationen liegen identisch in allen zehn Repositories. Beim Rollout den gemeinsamen Datenbankstand beachten; keine wiederholte manuelle Migration pro Website. Bewerbungen, CVs und Nutzungsdaten erhalten keinen öffentlichen Zugriff.
 
-Reproduzierbare lokale Prüfungen: `npm run check:applications`, `npm run check:public-jobs`, vorhandene `check:job-schema`/`check:analytics-boundary` sowie `npm run build`. Eine vollständige Speicherprobe benötigt autorisierte private Serverkonfiguration und anschliessende gezielte Bereinigung.
+## Abnahme
 
-## Auslieferung und spätere Wirkung
+Je Website vier Browserabläufe mit 390 × 844 und 1440 × 1000, jeweils mit und ohne Messzustimmung: leere Suche samt Rückkehr, Stellenwahl, ungültige/zu grosse PDF, Netzfehler, verlorene Bestätigung, Wiederholung und Erfolg. Zusätzlich gleichzeitige Erstübermittlung, schnelle Übermittlung ohne Kontaktfelder und alte Clients mit Kontaktfeldern. Private CVs wurden heruntergeladen und auf Lesbarkeit geprüft; Browser-CVs zusätzlich bytegleich verglichen.
 
-PR prüfen und zusammenführen; danach das Vercel-Deployment und eine markierte Produktionsprobe kontrollieren. Den Auslieferungszeitpunkt pro Website festhalten. Kein neues Anzeigenbudget, keine neue Kampagne und keine zusätzlichen Kalendertermine angelegt.
+Gesonderter Ablauf bei 320 × 568 mit gesperrtem Browserspeicher: Tastatur-Dateiauswahl, Entfernen während verzögerter Prüfung, Eingabesperre während abschliessender Prüfung und Erhalt nach Netzfehler. Keine unerwarteten Browserfehler oder Messanfragen. Testdossiers und Dateien werden nur anhand des eigenen Testlaufs gezielt bereinigt.
 
-Die vereinbarten CHF 5/3/2, «Conversions maximieren», 07.09.–06.10.2026 und die pausierte Alt-Kampagne bleiben unverändert. Bei vorhandenen Nachprüfungen echte Dossiers, zustimmungsabhängige Formularschritte und die separat durch Berater beurteilte Erreichbarkeit/Eignung vergleichen. Die gemessenen Sitzungen bilden nicht alle Besucher ab. Technische Fehlerbehebung ist kein Nachweis einer höheren Bewerbungsrate.
+`npm run check:applications` enthält 16 Prüfungen je Website, einschliesslich nie antwortender optionaler Messung, ungeklärter Speicherung, signierter Testfreigabe und Anfragebegrenzung. Dazu ESLint der geänderten Dateien, `check:public-jobs`, vorhandene Schema-/Analysegrenzen, Werbemesstests der drei Anzeigenziele und `npm run build`.
 
-Eine Löschfrist im Datensatz führt selbst keine Löschung aus. Bestehende Aufbewahrungsprüfung und Dossierbearbeitung bleiben operative Aufgaben. Bei dauerhaft ungewissem Datenbankausgang zurückbehaltene Dateien müssen vor einer Bereinigung auf Zuordnung geprüft werden.
+Die lokale Abnahme nutzt autorisierten privaten Speicher und einen Testadapter für den freigegebenen Origin. Produktionswerte wurden nicht durch Testkonfiguration ersetzt. Die tatsächliche Produktionsabnahme und deren Deployment-Zeitpunkt sind nach Zusammenführung im PR und im Arbeitsbereich-Bericht `marketing/cro-cv-name-2026-09-07/ABSCHLUSS.md` festzuhalten.
+
+## Wirkung und Betrieb
+
+CHF 5/3/2, «Conversions maximieren», 07.09.–06.10.2026 und die pausierte Alt-Kampagne bleiben unverändert. Bestehende Nachprüfungen verwenden, keine zusätzlichen Termine. Die privaten Abfragen in [ERFOLGSMESSUNG.sql](ERFOLGSMESSUNG.sql) trennen echte Dossiers von Prüfungen. Berater beurteilen Erreichbarkeit über den CV, fachliche Eignung und Bearbeitbarkeit separat. Eine höhere Bewerbungsrate ist erst nach ausreichend echten Daten beurteilbar.
+
+Eine Löschfrist im Datensatz löscht selbst keine Daten. Bestehende Aufbewahrungsprüfung und interne Dossierbearbeitung bleiben operative Aufgaben.

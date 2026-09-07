@@ -42,7 +42,7 @@ test("an ambiguous insert never removes a CV already committed or whose outcome 
  for (const scenario of [
   { data: { id: submission, cv_path: "current.pdf" }, error: null, deletes: 0, saved: true, unknown: false },
   { data: { id: submission, cv_path: "previous.pdf" }, error: null, deletes: 1, saved: true, unknown: false },
-  { data: null, error: null, deletes: 1, saved: false, unknown: false },
+  { data: null, error: null, deletes: 0, saved: false, unknown: true },
   { data: null, error: { message: "timeout" }, deletes: 0, saved: false, unknown: true },
  ]) {
   const deleted: string[][] = [];
@@ -53,4 +53,40 @@ test("an ambiguous insert never removes a CV already committed or whose outcome 
   assert.equal(result.saved,scenario.saved);
   assert.equal(result.unknown,scenario.unknown);
  }
+});
+
+
+test("a stalled analytics insert cannot hold a saved application acknowledgement", async () => {
+ const admin = { from(){ return { insert(){ return { abortSignal(){ return new Promise(() => {}); } }; } }; } } as unknown as Parameters<typeof recordApplicationSaved>[0];
+ const started = Date.now();
+ await recordApplicationSaved(admin,{sessionId:submission,sequence:1,consentVersion:"analytics-v1",synthetic:true},"gaertnerjob.ch","scraped-test",submission,true,20);
+ assert.ok(Date.now()-started < 500);
+});
+
+test("confirmed saved events use the server classification", async () => {
+ let properties: unknown;
+ const admin = { from(){ return { insert(row: {properties: unknown}){ properties=row.properties;return { abortSignal(){ return Promise.resolve({error:null}); } }; } }; } } as unknown as Parameters<typeof recordApplicationSaved>[0];
+ await recordApplicationSaved(admin,{sessionId:submission,sequence:1,consentVersion:"analytics-v1",synthetic:true},"gaertnerjob.ch","scraped-test",submission,false);
+ assert.equal((properties as {synthetic:boolean}).synthetic,false);
+});
+
+
+test("request throttling includes retries and expires without blocking other clients", async () => {
+ const {createApplicationRequestLimiter}=await import("./application-request-limit");const limited=createApplicationRequestLimiter();
+ for(let i=0;i<30;i++)assert.equal(limited("hashed-client",1000),false);
+ assert.equal(limited("hashed-client",1000),true);
+ assert.equal(limited("other-hashed-client",1000),false);
+ assert.equal(limited("hashed-client",61000),false);
+});
+
+
+test("production test tokens are signed, site-scoped and expire", async () => {
+ const {verifyApplicationTestRun}=await import("./application-test-run");const {createHmac}=await import("node:crypto");
+ const now=1_800_000_000_000,expires=1_800_000_030;
+ const signature=createHmac("sha256","private-secret").update(JSON.stringify(["cro-test-v1","gaertnerjob.ch",submission,expires])).digest("base64url");const token=`${expires}.${signature}`;
+ assert.equal(verifyApplicationTestRun("gaertnerjob.ch",submission,token,"private-secret",now),true);
+ assert.equal(verifyApplicationTestRun("other.ch",submission,token,"private-secret",now),false);
+ assert.equal(verifyApplicationTestRun("gaertnerjob.ch",submission,token,"wrong-secret",now),false);
+ assert.equal(verifyApplicationTestRun("gaertnerjob.ch",submission,token,"private-secret",now+31_000),false);
+ assert.equal(verifyApplicationTestRun("gaertnerjob.ch",submission,"forged","private-secret",now),false);
 });

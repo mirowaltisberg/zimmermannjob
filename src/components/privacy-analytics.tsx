@@ -1,6 +1,6 @@
 "use client";
 
-import { isSyntheticVisit } from "@/lib/application-client";
+import { getTestRunId, getTestRunToken, isSyntheticVisit } from "@/lib/application-client";
 
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -16,8 +16,10 @@ type ConsentChoice = "accepted" | "declined" | null;
 type EventProperties = Record<string, string | number | boolean>;
 
 function readConsentChoice(): ConsentChoice {
-  const stored = window.localStorage.getItem(CONSENT_KEY);
-  return stored === "accepted" || stored === "declined" ? stored : null;
+  try {
+    const stored = window.localStorage.getItem(CONSENT_KEY);
+    return stored === "accepted" || stored === "declined" ? stored : null;
+  } catch { return null; }
 }
 
 function subscribeToConsent(onChange: () => void): () => void {
@@ -101,9 +103,11 @@ export function PrivacyAnalytics() {
       properties: EventProperties = {},
       options: { keepalive?: boolean; path?: string } = {},
     ) => {
-      if (window.localStorage.getItem(CONSENT_KEY) !== "accepted") return;
+      if (readConsentChoice() !== "accepted") return;
       try {
       const payload = {
+        testRunId: getTestRunId(),
+        testToken: getTestRunToken(),
         sessionId: getSessionId(),
         sequence: nextSequence(),
         eventName,
@@ -286,7 +290,7 @@ export function PrivacyAnalytics() {
       window.sessionStorage.removeItem(STARTED_KEY);
     }
     window.dispatchEvent(new Event(CONSENT_EVENT));
-    } catch { return; }
+    } catch { setDeferred(true); }
     setSettingsOpen(false);
   };
 

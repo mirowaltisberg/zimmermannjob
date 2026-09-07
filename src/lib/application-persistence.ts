@@ -26,23 +26,29 @@ export function parseApplicationAnalytics(value: string): ApplicationAnalytics |
   } catch { return null; }
 }
 
-export async function recordApplicationSaved(admin: SupabaseClient, context: ApplicationAnalytics | null, site: string, jobId: string, conversionId: string, synthetic: boolean): Promise<void> {
+export async function recordApplicationSaved(admin: SupabaseClient, context: ApplicationAnalytics | null, site: string, jobId: string, conversionId: string, synthetic: boolean, timeoutMs = 1500): Promise<void> {
   if (!context) return;
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => { controller.abort(); reject(new Error("measurement_timeout")); }, timeoutMs);
+  });
   try {
-    const { error } = await admin.from("site_analytics_events").insert({
+    const { error } = await Promise.race([admin.from("site_analytics_events").insert({
       site, session_id: context.sessionId, sequence: context.sequence,
       event_name: "application_saved", path: `/jobs/${jobId}`,
-      properties: { job_id: jobId, conversion_id: conversionId, synthetic: synthetic || context.synthetic },
+      properties: { job_id: jobId, conversion_id: conversionId, synthetic },
       occurred_at: new Date().toISOString(), consent_version: context.consentVersion,
-    });
+    }).abortSignal(controller.signal), timeout]);
     if (error && error.code !== "23505") console.error("[applications] saved_step_measurement_failed");
   } catch { console.error("[applications] saved_step_measurement_failed"); }
+  finally { clearTimeout(timer); }
 }
 
 /** Resolve an ambiguous insert before deciding whether an uploaded CV is orphaned. */
 export async function resolveApplicationInsert(admin: SupabaseClient, bucket: string, path: string | null, id: string): Promise<{ saved: boolean; unknown: boolean; cleanupFailed: boolean }> {
   const { data, error } = await admin.from("applications").select("id,cv_path").eq("id", id).maybeSingle();
-  if (error) return { saved: false, unknown: true, cleanupFailed: false };
+  if (error || !data) return { saved: false, unknown: true, cleanupFailed: false };
   if (data?.cv_path === path && data) return { saved: true, unknown: false, cleanupFailed: false };
   const { error: cleanupError } = path ? await admin.storage.from(bucket).remove([path]) : { error: null };
   return { saved: Boolean(data), unknown: false, cleanupFailed: Boolean(cleanupError) };

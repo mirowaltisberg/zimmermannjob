@@ -10,6 +10,7 @@ select site, (submitted_at at time zone 'Europe/Zurich')::date as datum,
        source, status, count(*) as gespeicherte_dossiers
 from public.applications
 where submitted_at >= timestamptz '2026-09-07 00:00:00+02'
+  and source is distinct from 'synthetic'
 group by site, datum, source, status
 order by datum, site, source, status;
 

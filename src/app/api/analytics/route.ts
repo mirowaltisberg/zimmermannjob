@@ -1,3 +1,4 @@
+import { verifyApplicationTestRun } from "@/lib/application-test-run";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
@@ -54,6 +55,8 @@ const EVENT_FIELDS: Record<string, ReadonlySet<string>> = {
 };
 
 interface AnalyticsBody {
+  testRunId?: unknown;
+  testToken?: unknown;
   sessionId?: unknown;
   sequence?: unknown;
   eventName?: unknown;
@@ -181,6 +184,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (
+    !body || typeof body !== "object" || Array.isArray(body) ||
     !isUuid(body.sessionId) ||
     typeof body.sequence !== "number" ||
     !Number.isInteger(body.sequence) ||
@@ -230,7 +234,7 @@ export async function POST(request: NextRequest) {
       event_name: body.eventName,
       path: body.path,
       referrer_host: referrerHost,
-      properties,
+      properties: { ...properties, synthetic: process.env.VERCEL_ENV === "preview" || verifyApplicationTestRun(SITE, body.testRunId, body.testToken, process.env.SUPABASE_SERVICE_ROLE_KEY) },
       occurred_at: occurredAt!.toISOString(),
       consent_version: "analytics-v1",
     });

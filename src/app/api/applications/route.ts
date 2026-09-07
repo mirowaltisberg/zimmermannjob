@@ -1,3 +1,5 @@
+import { verifyApplicationTestRun } from "@/lib/application-test-run";
+import { createApplicationRequestLimiter } from "@/lib/application-request-limit";
 import { createHmac, randomUUID } from "node:crypto";
 
 import { applicationIdentity, isSubmissionId, parseApplicationAnalytics, recordApplicationSaved, resolveApplicationInsert } from "@/lib/application-persistence";
@@ -20,6 +22,7 @@ import {
 } from "@/lib/application-validation";
 
 export const runtime = "nodejs";
+const requestLimited = createApplicationRequestLimiter();
 
 const ALLOWED_FIELDS = new Set([
   "jobId",
@@ -33,6 +36,7 @@ const ALLOWED_FIELDS = new Set([
   "submissionId",
   "analytics",
   "testRunId",
+  "testToken",
 ]);
 
 class InvalidApplicationRequest extends Error {}
@@ -165,6 +169,7 @@ async function isRateLimited(
     .from("applications")
     .select("id", { count: "exact", head: true })
     .eq("site", config.site)
+    .neq("source", "synthetic")
     .eq("ip_hash", ipHash)
     .gte("submitted_at", windowStart);
 
@@ -187,16 +192,21 @@ export async function POST(request: Request) {
     return unavailableResponse();
   }
 
+  if (requestLimited(hashClientAddress(clientAddress, config.ipHashSecret))) {
+    return jsonError("Zu viele Versuche in kurzer Zeit. Bitte warte eine Minute und sende erneut ab.", 429);
+  }
+
   try {
     const formData = await parseBoundedFormData(request);
     const submissionId = formData.has("submissionId") ? getSingleString(formData, "submissionId") : randomUUID();
     const analytics = parseApplicationAnalytics(formData.has("analytics") ? getSingleString(formData, "analytics") : "");
     const testRunId = formData.has("testRunId") ? getSingleString(formData, "testRunId") : "";
     if (!isSubmissionId(submissionId) || (testRunId && !isSubmissionId(testRunId))) throw new InvalidApplicationRequest();
+    const testToken = formData.has("testToken") ? getSingleString(formData, "testToken") : "";
     const jobId = getSingleString(formData, "jobId");
     const name = getSingleString(formData, "name");
-    const email = getSingleString(formData, "email").toLowerCase();
-    const phone = getSingleString(formData, "phone");
+    const email = formData.has("email") ? getSingleString(formData, "email").toLowerCase() : "";
+    const phone = formData.has("phone") ? getSingleString(formData, "phone") : "";
     const website = getSingleString(formData, "website");
     const formStartedAt = getSingleString(formData, "formStartedAt");
     const consent = getSingleString(formData, "consent");
@@ -208,8 +218,8 @@ export async function POST(request: Request) {
       consent !== "yes" ||
       !/^[a-zA-Z0-9_-]{1,120}$/.test(jobId) ||
       !isValidPlainText(name, 100) ||
-      !isValidEmail(email) ||
-      !isValidPhone(phone) ||
+      (email !== "" && !isValidEmail(email)) ||
+      (phone !== "" && !isValidPhone(phone)) ||
       !isValidPdfFilename(filename) ||
       !isAcceptedPdfMimeType(cv.type) ||
       cv.size < 10 ||
@@ -218,8 +228,9 @@ export async function POST(request: Request) {
       return jsonError("Bitte prüfe deine Angaben und die PDF-Datei.", 400);
     }
 
-    const synthetic = Boolean(testRunId) || process.env.VERCEL_ENV === "preview";
-    if (testRunId && !email.endsWith("@example.invalid")) {
+    const synthetic = process.env.VERCEL_ENV === "preview" || verifyApplicationTestRun(config.site, testRunId, testToken, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    if ((testRunId || testToken) && !synthetic) return jsonError("Die Freigabe für diesen Testlauf ist ungültig oder abgelaufen.", 400);
+    if (testRunId && email && !email.endsWith("@example.invalid")) {
       return jsonError("Für einen markierten Testlauf bitte eine Adresse unter @example.invalid verwenden.", 400);
     }
     const buffer = Buffer.from(await cv.arrayBuffer());
@@ -235,11 +246,11 @@ export async function POST(request: Request) {
     if (lookupError) return unavailableResponse();
     if (existing) return acknowledge();
     if (!isAcceptableFormAge(formStartedAt)) {
-      return jsonError("Das Formular war sehr kurz oder lange geöffnet. Deine Angaben bleiben erhalten. Bitte sende sie nochmals ab.", 400);
+      return jsonError("Das Formular ist abgelaufen. Deine Angaben bleiben erhalten. Bitte sende sie nochmals ab.", 400);
     }
 
     const ipHash = hashClientAddress(clientAddress, config.ipHashSecret);
-    const rateLimit = await isRateLimited(config, ipHash);
+    const rateLimit = synthetic ? "allowed" : await isRateLimited(config, ipHash);
     if (rateLimit === "unavailable") {
       logFailure("rate_limit_check_failed", requestId);
       return unavailableResponse();
@@ -284,14 +295,14 @@ export async function POST(request: Request) {
       id: applicationId,
       job_id: jobId,
       name,
-      email,
-      phone,
+      email: email || null,
+      phone: phone || null,
       cv_path: storagePath,
       cv_filename: filename,
       source: synthetic ? "synthetic" : "form",
       site: config.site,
       status: "received",
-      consent_version: config.consentVersion,
+      consent_version: !email && !phone ? `${config.consentVersion}:cv-name-v1` : config.consentVersion,
       consented_at: now.toISOString(),
       retention_expires_at: retentionExpiresAt,
       ip_hash: ipHash,

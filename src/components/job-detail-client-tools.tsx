@@ -62,7 +62,7 @@ function readRecentJobs(): RecentJobEntry[] {
   }
 
   try {
-    SOURCE_BEARING_RECENT_KEYS.forEach((key) => window.localStorage.removeItem(key));
+    try { SOURCE_BEARING_RECENT_KEYS.forEach((key) => window.localStorage.removeItem(key)); } catch { /* Recent jobs are optional. */ }
     const raw = window.localStorage.getItem(RECENT_KEY);
     if (!raw) {
       return [];
@@ -187,7 +187,7 @@ export function RecentlyViewedJobs({
   const [recentJobs, setRecentJobs] = useState<RecentJobEntry[]>([]);
 
   useEffect(() => {
-    SOURCE_BEARING_RECENT_KEYS.forEach((key) => window.localStorage.removeItem(key));
+    try { SOURCE_BEARING_RECENT_KEYS.forEach((key) => window.localStorage.removeItem(key)); } catch { /* Recent jobs are optional. */ }
 
     const previousEntries = readRecentJobs().filter((entry) => entry.id !== jobId);
     const updateId = window.setTimeout(() => setRecentJobs(previousEntries.slice(0, 3)), 0);
@@ -200,10 +200,9 @@ export function RecentlyViewedJobs({
       viewedAt: new Date().toISOString(),
     };
 
-    window.localStorage.setItem(
-      RECENT_KEY,
-      JSON.stringify([currentEntry, ...previousEntries].slice(0, 6))
-    );
+    try {
+      window.localStorage.setItem(RECENT_KEY, JSON.stringify([currentEntry, ...previousEntries].slice(0, 6)));
+    } catch { /* Saving a recent job must never interrupt applying. */ }
     trackEvent("job_view", { job_id: jobId });
     return () => window.clearTimeout(updateId);
   }, [currentHref, jobId, jobTitle, location]);
