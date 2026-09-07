@@ -68,7 +68,7 @@ export default function DatenschutzPage() {
             <h2 className="text-xl font-semibold text-slate-900">Verarbeitung bei aktivierter Einreichung</h2>
             <div className="mt-3 space-y-3 text-slate-700">
               <p>
-                Erst nach ausdrücklicher Einwilligung werden Name, E-Mail-Adresse, Telefonnummer, Stellen-ID und ein PDF-Lebenslauf zur internen Prüfung gespeichert. Die Einwilligung wird mit Zeitpunkt und Textversion dokumentiert.
+                Erst nach ausdrücklicher Einwilligung werden Name, Stellen-ID und ein PDF-Lebenslauf zur internen Prüfung gespeichert. Für Rückfragen nutzt das Team die im CV angegebenen Kontaktdaten. Die Einwilligung wird mit Zeitpunkt und Textversion dokumentiert.
               </p>
               <p>
                 Der Lebenslauf wird unter einem zufälligen Dateipfad in einem privaten Speicherbereich abgelegt. Die IP-Adresse wird nicht im Klartext gespeichert; für die Missbrauchsbegrenzung wird nur ein nicht rückrechenbarer, serverseitig geschützter Hash verwendet.
@@ -89,7 +89,7 @@ export default function DatenschutzPage() {
           )}
 
           <section>
-            <h2 className="text-xl font-semibold text-slate-900">Anonyme Nutzungsanalyse</h2>
+            <h2 className="text-xl font-semibold text-slate-900">Optionale Nutzungsanalyse</h2>
             <div className="mt-3 space-y-3 text-slate-700">
               <p>
                 Erst nach einer ausdrücklichen Zustimmung wird eine zufällige

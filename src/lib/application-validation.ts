@@ -1,11 +1,11 @@
-export const MAX_APPLICATION_PDF_BYTES = 5 * 1024 * 1024;
+export const MAX_APPLICATION_PDF_BYTES = 4 * 1024 * 1024;
 export const MAX_APPLICATION_REQUEST_BYTES = MAX_APPLICATION_PDF_BYTES + 64 * 1024;
-export const MIN_APPLICATION_FORM_AGE_MS = 3_000;
+export const MIN_APPLICATION_FORM_AGE_MS = 0;
 export const MAX_APPLICATION_FORM_AGE_MS = 2 * 60 * 60 * 1_000;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_CHARACTERS_PATTERN = /^\+?[0-9 ()/.-]+$/;
-const SAFE_PDF_FILENAME_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} ._()-]*\.pdf$/iu;
+const SAFE_PDF_FILENAME_PATTERN = /^[^\u0000-\u001f\u007f]+\.pdf$/iu;
 const DISALLOWED_PDF_FEATURES =
   /\/(?:Encrypt|ImportData|JavaScript|JS|Launch|SubmitForm)(?![\p{L}\p{N}])/iu;
 const ACCEPTED_PDF_MIME_TYPES = new Set([

@@ -18,7 +18,7 @@ import { getJobListingById, getSimilarJobListings } from "@/lib/job-catalog";
 import type { JobListing } from "@/lib/job-types";
 import { JobPrimaryAction, JobShareActions, RecentlyViewedJobs } from "@/components/job-detail-client-tools";
 import { TOP_LANDING_PAGES, getLandingPath } from "@/lib/landing-pages";
-import { areApplicationsAvailable } from "@/lib/applications-config";
+import { areApplicationsAvailable, getApplicationControllerIdentity } from "@/lib/applications-config";
 import { SiteBrand } from "@/components/site-brand";
 import { formatSwissDate } from "@/lib/date-format";
 import { buildJobPostingSchema } from "@/lib/job-schema";
@@ -87,7 +87,7 @@ export async function generateMetadata(props: JobDetailsPageProps): Promise<Meta
   const slugPath = `/jobs/${job.id}`;
 
   return {
-    title: job.title,
+    title: `${job.title} in ${job.location} · ${getDisplayJobId(job)}`,
     description,
     alternates: {
       canonical: slugPath,
@@ -96,10 +96,12 @@ export async function generateMetadata(props: JobDetailsPageProps): Promise<Meta
       title: `${job.title}`,
       description,
       type: "article",
+      images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: `${job.title} in ${job.location}` }],
       url: slugPath,
     },
     twitter: {
       card: "summary_large_image",
+      images: [`${SITE_URL}/opengraph-image`],
       title: `${job.title}`,
       description,
     },
@@ -355,6 +357,7 @@ export default async function JobDetailsPage(props: JobDetailsPageProps) {
                 jobId={job.id}
                 jobTitle={job.title}
                 applicationsAvailable={applicationsAvailable}
+                controllerName={getApplicationControllerIdentity()?.name}
               />
 
               <div className="mt-6 pt-6 border-t text-sm text-slate-500 space-y-3">
@@ -382,11 +385,12 @@ export default async function JobDetailsPage(props: JobDetailsPageProps) {
         </div>
       </main>
 
-      <div className="mobile-command-bar lg:hidden fixed bottom-0 left-0 right-0 px-4 pt-3 pb-[max(0.875rem,env(safe-area-inset-bottom))] border-t z-20">
+      <div className="mobile-command-bar lg:hidden fixed bottom-0 left-0 right-0 px-4 pt-3 pb-[calc(3.25rem+env(safe-area-inset-bottom))] border-t z-20">
         <JobPrimaryAction
           jobId={job.id}
           jobTitle={job.title}
           applicationsAvailable={applicationsAvailable}
+                controllerName={getApplicationControllerIdentity()?.name}
         />
       </div>
     </div>

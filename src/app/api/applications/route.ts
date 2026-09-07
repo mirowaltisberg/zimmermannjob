@@ -1,4 +1,8 @@
+import { verifyApplicationTestRun } from "@/lib/application-test-run";
+import { createApplicationRequestLimiter } from "@/lib/application-request-limit";
 import { createHmac, randomUUID } from "node:crypto";
+
+import { applicationIdentity, isSubmissionId, parseApplicationAnalytics, recordApplicationSaved, resolveApplicationInsert } from "@/lib/application-persistence";
 
 import { NextResponse } from "next/server";
 import { getJobListingById } from "@/lib/job-catalog";
@@ -18,6 +22,7 @@ import {
 } from "@/lib/application-validation";
 
 export const runtime = "nodejs";
+const requestLimited = createApplicationRequestLimiter();
 
 const ALLOWED_FIELDS = new Set([
   "jobId",
@@ -28,6 +33,10 @@ const ALLOWED_FIELDS = new Set([
   "website",
   "formStartedAt",
   "consent",
+  "submissionId",
+  "analytics",
+  "testRunId",
+  "testToken",
 ]);
 
 class InvalidApplicationRequest extends Error {}
@@ -160,6 +169,7 @@ async function isRateLimited(
     .from("applications")
     .select("id", { count: "exact", head: true })
     .eq("site", config.site)
+    .neq("source", "synthetic")
     .eq("ip_hash", ipHash)
     .gte("submitted_at", windowStart);
 
@@ -182,12 +192,21 @@ export async function POST(request: Request) {
     return unavailableResponse();
   }
 
+  if (requestLimited(hashClientAddress(clientAddress, config.ipHashSecret))) {
+    return jsonError("Zu viele Versuche in kurzer Zeit. Bitte warte eine Minute und sende erneut ab.", 429);
+  }
+
   try {
     const formData = await parseBoundedFormData(request);
+    const submissionId = formData.has("submissionId") ? getSingleString(formData, "submissionId") : randomUUID();
+    const analytics = parseApplicationAnalytics(formData.has("analytics") ? getSingleString(formData, "analytics") : "");
+    const testRunId = formData.has("testRunId") ? getSingleString(formData, "testRunId") : "";
+    if (!isSubmissionId(submissionId) || (testRunId && !isSubmissionId(testRunId))) throw new InvalidApplicationRequest();
+    const testToken = formData.has("testToken") ? getSingleString(formData, "testToken") : "";
     const jobId = getSingleString(formData, "jobId");
     const name = getSingleString(formData, "name");
-    const email = getSingleString(formData, "email").toLowerCase();
-    const phone = getSingleString(formData, "phone");
+    const email = formData.has("email") ? getSingleString(formData, "email").toLowerCase() : "";
+    const phone = formData.has("phone") ? getSingleString(formData, "phone") : "";
     const website = getSingleString(formData, "website");
     const formStartedAt = getSingleString(formData, "formStartedAt");
     const consent = getSingleString(formData, "consent");
@@ -197,11 +216,10 @@ export async function POST(request: Request) {
     if (
       website !== "" ||
       consent !== "yes" ||
-      !isAcceptableFormAge(formStartedAt) ||
       !/^[a-zA-Z0-9_-]{1,120}$/.test(jobId) ||
       !isValidPlainText(name, 100) ||
-      !isValidEmail(email) ||
-      !isValidPhone(phone) ||
+      (email !== "" && !isValidEmail(email)) ||
+      (phone !== "" && !isValidPhone(phone)) ||
       !isValidPdfFilename(filename) ||
       !isAcceptedPdfMimeType(cv.type) ||
       cv.size < 10 ||
@@ -210,8 +228,29 @@ export async function POST(request: Request) {
       return jsonError("Bitte prüfe deine Angaben und die PDF-Datei.", 400);
     }
 
+    const synthetic = process.env.VERCEL_ENV === "preview" || verifyApplicationTestRun(config.site, testRunId, testToken, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    if ((testRunId || testToken) && !synthetic) return jsonError("Die Freigabe für diesen Testlauf ist ungültig oder abgelaufen.", 400);
+    if (testRunId && email && !email.endsWith("@example.invalid")) {
+      return jsonError("Für einen markierten Testlauf bitte eine Adresse unter @example.invalid verwenden.", 400);
+    }
+    const buffer = Buffer.from(await cv.arrayBuffer());
+    const applicationId = applicationIdentity(config.ipHashSecret, config.site, submissionId, [jobId, name, email, phone, filename, testRunId], buffer);
+    const supabase = createAdminClient();
+    const acknowledge = async () => {
+      await recordApplicationSaved(supabase, analytics, config.site, jobId, applicationId, synthetic);
+      return NextResponse.json({ success: true, conversionId: applicationId, synthetic }, {
+        status: 202, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
+      });
+    };
+    const { data: existing, error: lookupError } = await supabase.from("applications").select("id").eq("id", applicationId).maybeSingle();
+    if (lookupError) return unavailableResponse();
+    if (existing) return acknowledge();
+    if (!isAcceptableFormAge(formStartedAt)) {
+      return jsonError("Das Formular ist abgelaufen. Deine Angaben bleiben erhalten. Bitte sende sie nochmals ab.", 400);
+    }
+
     const ipHash = hashClientAddress(clientAddress, config.ipHashSecret);
-    const rateLimit = await isRateLimited(config, ipHash);
+    const rateLimit = synthetic ? "allowed" : await isRateLimited(config, ipHash);
     if (rateLimit === "unavailable") {
       logFailure("rate_limit_check_failed", requestId);
       return unavailableResponse();
@@ -223,7 +262,6 @@ export async function POST(request: Request) {
     const job = await getJobListingById({ id: jobId });
     if (!job) return jsonError("Diese Stelle ist nicht mehr verfügbar.", 404);
 
-    const buffer = Buffer.from(await cv.arrayBuffer());
     if (!hasPdfMagic(buffer)) {
       return jsonError("Die PDF-Datei konnte nicht angenommen werden.", 400);
     }
@@ -237,7 +275,6 @@ export async function POST(request: Request) {
 
     const now = new Date();
     const storagePath = `${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, "0")}/${randomUUID()}.pdf`;
-    const supabase = createAdminClient();
     const { error: uploadError } = await supabase.storage
       .from(config.storageBucket)
       .upload(storagePath, buffer, {
@@ -255,16 +292,17 @@ export async function POST(request: Request) {
       now.getTime() + config.retentionDays * 24 * 60 * 60 * 1_000
     ).toISOString();
     const { error: insertError } = await supabase.from("applications").insert({
+      id: applicationId,
       job_id: jobId,
       name,
-      email,
-      phone,
+      email: email || null,
+      phone: phone || null,
       cv_path: storagePath,
       cv_filename: filename,
-      source: "form",
+      source: synthetic ? "synthetic" : "form",
       site: config.site,
       status: "received",
-      consent_version: config.consentVersion,
+      consent_version: !email && !phone ? `${config.consentVersion}:cv-name-v1` : config.consentVersion,
       consented_at: now.toISOString(),
       retention_expires_at: retentionExpiresAt,
       ip_hash: ipHash,
@@ -272,23 +310,14 @@ export async function POST(request: Request) {
     });
 
     if (insertError) {
-      const { error: cleanupError } = await supabase.storage
-        .from(config.storageBucket)
-        .remove([storagePath]);
-      logFailure(cleanupError ? "application_insert_and_cleanup_failed" : "application_insert_failed", requestId);
+      const result = await resolveApplicationInsert(supabase, config.storageBucket, storagePath, applicationId);
+      if (result.cleanupFailed) logFailure("application_upload_cleanup_failed", requestId);
+      if (result.saved) return acknowledge();
+      logFailure(result.unknown ? "application_insert_outcome_unknown" : "application_insert_failed", requestId);
       return unavailableResponse();
     }
 
-    return NextResponse.json(
-      { success: true },
-      {
-        status: 202,
-        headers: {
-          "Cache-Control": "no-store",
-          "X-Content-Type-Options": "nosniff",
-        },
-      }
-    );
+    return acknowledge();
   } catch (error) {
     if (error instanceof ApplicationRequestTooLarge) {
       return jsonError("Die Anfrage oder PDF-Datei ist zu gross.", 413);

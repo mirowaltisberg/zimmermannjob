@@ -25,6 +25,8 @@ test("accepts only bounded, path-free PDF filenames", () => {
   assert.equal(isValidPdfFilename("Lebenslauf Müller.pdf"), true);
   assert.equal(isValidPdfFilename("../../cv.pdf"), false);
   assert.equal(isValidPdfFilename("cv.docx"), false);
+  assert.equal(isValidPdfFilename("CV – Müller [2026] + Zeugnisse.pdf"), true);
+  assert.equal(isValidPdfFilename("cv\u0000.pdf"), false);
 });
 
 test("accepts common PDF MIME types used by phones and scanners", () => {
@@ -68,10 +70,12 @@ test("accepts common PDF structures but rejects executable actions", () => {
   assert.equal(hasDisallowedPdfFeatures(encryptedPdf), true);
 });
 
-test("enforces a bounded form age", () => {
+test("accepts fast applicants while rejecting expired or future form timestamps", () => {
   const now = 1_800_000_000_000;
   assert.equal(isAcceptableFormAge(String(now - 4_000), now), true);
-  assert.equal(isAcceptableFormAge(String(now - 1_000), now), false);
+  assert.equal(isAcceptableFormAge(String(now - 1_000), now), true);
+  assert.equal(isAcceptableFormAge(String(now), now), true);
+  assert.equal(isAcceptableFormAge(String(now + 1_000), now), false);
   assert.equal(isAcceptableFormAge(String(now - 8_000_000), now), false);
 });
 
